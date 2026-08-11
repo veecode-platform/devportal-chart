@@ -1,0 +1,31 @@
+{{- if .Values.global.veecode.guestAuth.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: veecode-auth
+  labels:
+    {{- include "common.labels.standard" . | nindent 4 }}
+data:
+  app-config.veecode-auth.yaml: |
+{{ .Files.Get "files/veecode/app-config.veecode-auth.yaml" | nindent 4 }}
+{{- end }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: veecode-branding
+  labels:
+    {{- include "common.labels.standard" . | nindent 4 }}
+data:
+  app-config.veecode-branding.yaml: |
+{{ .Files.Get "files/veecode/app-config.veecode-branding.yaml" | nindent 4 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: veecode-extensions-config
+  labels:
+    {{- include "common.labels.standard" . | nindent 4 }}
+data:
+  app-config.extensions.yaml: |
+{{ .Files.Get "files/veecode/app-config.extensions.yaml" | nindent 4 }}

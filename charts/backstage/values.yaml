@@ -1,17 +1,310 @@
 nameOverride: developer-hub
+permission:
+  enabled: false
+kubernetesPlugin:
+  rbac:
+    # -- Grant the chart's service account read-only access used by the Kubernetes plugin.
+    enabled: true
+    # -- Optional override; empty follows the upstream chart's generated service account name.
+    serviceAccountName: ""
 global:
   dynamic:
-    # -- Array of YAML files listing dynamic plugins to include with those listed in the `plugins` field.
-    # Relative paths are resolved from the working directory of the initContainer that will install the plugins (`/opt/app-root/src`).
+    # The marketplace pre-step regenerates this file from Postgres before the
+    # installer runs; a missing target is a warning, never a crash (M3).
     includes:
-      # -- List of dynamic plugins included inside the `rhdh` container image, some of which are disabled by default.
-      # This file ONLY works with the `rhdh` container image.
-      - "dynamic-plugins.default.yaml"
-    # -- List of dynamic plugins, possibly overriding the plugins listed in `includes` files.
-    # Every item defines the plugin `package` as a [NPM package spec](https://docs.npmjs.com/cli/v10/using-npm/package-spec),
-    # an optional `pluginConfig` with plugin-specific backstage configuration, and an optional `enabled` flag to enable/disable a plugin
-    # listed in `includes` files. It also includes an `integrity` field that is used to verify the plugin package [integrity](https://w3c.github.io/webappsec-subresource-integrity/#integrity-metadata-description).
-    plugins: []
+      - /m3data/extensions-install.yaml
+    plugins:
+      # ── Home ────────────────────────────────────────────────────────────
+      # Q1 REVISITED (2026-08-11, pending Gio's ratification): the VeeCode
+      # analytics home is being tried back as the 3.x default, replacing
+      # upstream's search+cards IA. `/` is the ONE route RHDH lets a dynamic
+      # plugin override — but the loader does NOT dedupe competing `path: /`
+      # entries (first registered wins), and the VeeCode plugin registers its
+      # OWN `visitsApiRef` factory, which would collide with this plugin's.
+      # So this entry must be DISABLED, not merely stripped of its route.
+      # Kept in full (disabled) as the one-line revert.
+      - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-dynamic-home-page
+        disabled: true
+        pluginConfig:
+          dynamicPlugins:
+            frontend:
+              red-hat-developer-hub.backstage-plugin-dynamic-home-page:
+                translationResources:
+                  - importName: homepageTranslations
+                    ref: homepageTranslationRef
+                    module: Alpha
+                dynamicRoutes:
+                  - path: /
+                    importName: DynamicHomePage
+                mountPoints:
+                  - mountPoint: application/listener
+                    importName: VisitListener
+                  - mountPoint: home.page/cards
+                    importName: SearchBar
+                    config:
+                      layouts:
+                        xl: { w: 10, h: 1, x: 1 }
+                        lg: { w: 10, h: 1, x: 1 }
+                        md: { w: 10, h: 1, x: 1 }
+                        sm: { w: 10, h: 1, x: 1 }
+                        xs: { w: 12, h: 1 }
+                        xxs: { w: 12, h: 1 }
+                  - mountPoint: home.page/cards
+                    importName: QuickAccessCard
+                    config:
+                      layouts:
+                        xl: { w: 7, h: 8 }
+                        lg: { w: 7, h: 8 }
+                        md: { w: 7, h: 8 }
+                        sm: { w: 12, h: 8 }
+                        xs: { w: 12, h: 8 }
+                        xxs: { w: 12, h: 8 }
+                  - mountPoint: home.page/cards
+                    importName: CatalogStarredEntitiesCard
+                    config:
+                      layouts:
+                        xl: { w: 5, h: 4, x: 7 }
+                        lg: { w: 5, h: 4, x: 7 }
+                        md: { w: 5, h: 4, x: 7 }
+                        sm: { w: 12, h: 4 }
+                        xs: { w: 12, h: 4 }
+                        xxs: { w: 12, h: 4 }
+
+      # VeeCode analytics home (greeting + highlighted card + stat cards +
+      # summary + visited charts) — the 2.x default, delivered here by the
+      # same remote-npm + integrity mechanism already proven for `about`
+      # (M4 Q4). pluginConfig copied verbatim from 2.x
+      # (devportal-platform/dynamic-plugins.yaml:27-43), minus `preInstalled`
+      # (unsupported by this installer — see the header note).
+      # KNOWN RISK: the published artifact declares `supported-versions: 1.49.0`
+      # and hard-pins `@scalprum/react-core@0.9.5`; the shell here is Backstage
+      # 1.52. If the route 404s or mounts blank, check the browser console for
+      # scalprum/shared-scope errors FIRST.
+      - package: "@veecode-platform/plugin-veecode-homepage-dynamic@1.1.0"
+        integrity: "sha512-KwLOR/deMqxDL8fgdGlvlvyvnyx7eYh8ckZS7a/45uNVd0+rw9s6ZPkb7sbN8NN64rNopzLCGsP+OaX0lTS1Pg=="
+        disabled: false
+        pluginConfig:
+          dynamicPlugins:
+            frontend:
+              veecode-platform.plugin-veecode-homepage:
+                translationResources:
+                  - importName: homepageTranslations
+                    ref: homepageTranslationRef
+                dynamicRoutes:
+                  - path: /
+                    importName: VeecodeHomepagePage
+                    config:
+                      props:
+                        width: 1500
+                        height: 800
+
+      # ── Header (rich default; owns default.admin sidebar group) ───────────
+      - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-global-header
+        disabled: false
+        pluginConfig:
+          dynamicPlugins:
+            frontend:
+              default.main-menu-items:
+                menuItems:
+                  default.admin:
+                    title: Administration
+                    textKey: menuItem.administration
+                    icon: admin
+              red-hat-developer-hub.backstage-plugin-global-header:
+                translationResources:
+                  - importName: globalHeaderTranslations
+                    ref: globalHeaderTranslationRef
+                mountPoints:
+                  - mountPoint: application/header
+                    importName: GlobalHeader
+                    config:
+                      position: above-sidebar
+                  - mountPoint: global.header/component
+                    importName: CompanyLogo
+                    config:
+                      priority: 200
+                      props:
+                        to: "/"
+                  - mountPoint: global.header/component
+                    importName: SearchComponent
+                    config:
+                      priority: 100
+                  - mountPoint: global.header/component
+                    importName: Spacer
+                    config:
+                      priority: 99
+                      props:
+                        growFactor: 0
+                  - mountPoint: global.header/component
+                    importName: HeaderIconButton
+                    config:
+                      priority: 90
+                      props:
+                        title: Self-service
+                        titleKey: create.title
+                        icon: add
+                        to: create
+                  - mountPoint: global.header/component
+                    importName: StarredDropdown
+                    config:
+                      priority: 85
+                  - mountPoint: global.header/component
+                    importName: ApplicationLauncherDropdown
+                    config:
+                      priority: 82
+                  - mountPoint: global.header/component
+                    importName: HelpDropdown
+                    config:
+                      priority: 80
+                  - mountPoint: global.header/help
+                    importName: SupportButton
+                    config:
+                      priority: 10
+                  - mountPoint: global.header/component
+                    importName: NotificationButton
+                    config:
+                      priority: 70
+                  - mountPoint: global.header/component
+                    importName: Divider
+                    config:
+                      priority: 50
+                  - mountPoint: global.header/component
+                    importName: ProfileDropdown
+                    config:
+                      priority: 10
+                  - mountPoint: global.header/profile
+                    importName: MenuItemLink
+                    config:
+                      priority: 100
+                      props:
+                        title: Settings
+                        titleKey: profile.settings
+                        link: /settings
+                        icon: manageAccounts
+                  - mountPoint: global.header/profile
+                    importName: MenuItemLink
+                    config:
+                      priority: 90
+                      props:
+                        title: My profile
+                        titleKey: profile.myProfile
+                        type: myProfile
+                        icon: account
+                  - mountPoint: global.header/profile
+                    importName: LogoutButton
+                    config:
+                      priority: 10
+
+      # ── RBAC (frontend UI only; /rbac under Administration; enforcement OFF) ─
+      - package: ./dynamic-plugins/dist/backstage-community-plugin-rbac
+        disabled: false
+        pluginConfig:
+          dynamicPlugins:
+            frontend:
+              backstage-community.plugin-rbac:
+                appIcons:
+                  - name: rbacIcon
+                    importName: RbacIcon
+                dynamicRoutes:
+                  - path: /rbac
+                    importName: RbacPage
+                    menuItem:
+                      icon: rbacIcon
+                      text: RBAC
+                menuItems:
+                  rbac:
+                    parent: default.admin
+                    icon: rbacIcon
+
+      # ── Theme (VeeCode theme via OCI; id-collision light/dark replace) ─────
+      - package: oci://quay.io/veecode/veecode-theme:bs_1.49.4!veecode-platform-plugin-veecode-theme
+        disabled: false
+        pluginConfig:
+          dynamicPlugins:
+            frontend:
+              veecode-platform.plugin-veecode-theme:
+                themes:
+                  - id: light
+                    title: VeeCode Light
+                    variant: light
+                    importName: VeecodeLightThemeProvider
+                  - id: dark
+                    title: VeeCode Dark
+                    variant: dark
+                    importName: VeecodeDarkThemeProvider
+
+      # ── About (npm spec; /about under Administration) ─────────────────────
+      - package: "@veecode-platform/backstage-plugin-about-dynamic@1.1.0"
+        integrity: "sha512-t39lBHEqNQ1B3enyYAvkUtGaEGx1Hxox3p4Vw7ZDcnmXzydG1vsO/rc1Ny0ra4TMhbkN84ECcQGpTwO5wUILMg=="
+        disabled: false
+        pluginConfig:
+          dynamicPlugins:
+            frontend:
+              veecode-platform.backstage-plugin-about:
+                appIcons:
+                  - name: aboutIcon
+                    importName: AboutIcon
+                dynamicRoutes:
+                  - path: /about
+                    importName: AboutPage
+                    menuItem:
+                      icon: aboutIcon
+                      text: About
+                      enabled: true
+                menuItems:
+                  about:
+                    parent: default.admin
+                    title: About
+                    icon: aboutIcon
+
+      # ── About backend (npm spec; no pluginConfig) ─────────────────────────
+      - package: "@veecode-platform/backstage-plugin-about-backend-dynamic@1.1.0"
+        integrity: "sha512-LBAbJd/c9UbAh61jToFPXBe3s10Fj01a2pu7SnU3tO5qqxFCmQs6UuEREXERPSmRNdwFuBdggfruDVIrdevI0Q=="
+        disabled: false
+
+      # ── Marketplace / Extensions (M3 loop) ────────────────────────────────
+      # Catalog provider that ingests the extracted index entities.
+      - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-catalog-backend-module-extensions-dynamic
+        disabled: false
+      # VeeCode marketplace backend (byte-identical across tags; owns /api/extensions/*).
+      - package: oci://quay.io/veecode/marketplace:bs_1.53.0!devportal-marketplace-backend
+        disabled: false
+      # Pending-changes (header button for the batch install/removal UX).
+      - package: oci://quay.io/veecode/marketplace:bs_1.53.0!devportal-pending-changes-dynamic
+        disabled: false
+        pluginConfig:
+          dynamicPlugins:
+            frontend:
+              devportal.pending-changes:
+                mountPoints:
+                  - mountPoint: global.header/component
+                    importName: PendingChangesButton
+                    config:
+                      priority: 55
+                      props:
+                        pollingIntervalMs: 30000
+      # VeeCode marketplace frontend at /marketplace (bs_1.49.4 — the FE selector
+      # genuinely differs by Backstage version, unlike the backend).
+      - package: oci://quay.io/veecode/marketplace:bs_1.49.4!devportal-marketplace-frontend-dynamic
+        disabled: false
+        pluginConfig:
+          dynamicPlugins:
+            frontend:
+              devportal.marketplace-frontend:
+                appIcons:
+                  - name: pluginsIcon
+                    importName: PluginsIcon
+                dynamicRoutes:
+                  - path: /marketplace
+                    importName: DynamicExtensionsPluginRouter
+                    menuItem:
+                      icon: pluginsIcon
+                      text: Marketplace
+                menuItems:
+                  marketplace:
+                    title: Marketplace
+                    icon: pluginsIcon
+
   # -- Shorthand for users who do not want to specify a custom HOSTNAME. Used ONLY with the DEFAULT upstream.backstage.appConfig value and with OCP Route enabled.
   clusterRouterBase: "apps.example.com"
   # -- Custom hostname shorthand, overrides `global.clusterRouterBase`, `upstream.ingress.host`, `route.host`, and url values in `upstream.backstage.appConfig`.
@@ -22,11 +315,29 @@ global:
     # <br /> Ref: https://backstage.io/docs/auth/service-to-service-auth/
     backend:
       # -- Enable backend service to service authentication, unless configured otherwise it generates a secret value
-      enabled: true
+      enabled: false
       # -- Instead of generating a secret value, refer to existing secret
       existingSecret: ""
       # -- Instead of generating a secret value, use the following value
       value: ""
+  veecode:
+    # !!! SECURITY: this deliberately maps unauthenticated users to ADMIN.
+    # !!! Set this single key to false before exposing the portal to real users;
+    # !!! then configure a real provider (GitLab/GitHub OAuth). RBAC enforcement
+    # !!! is still off until the later M6 decision.
+    guestAuth:
+      enabled: true
+    # The vendored deployment template prepends this command to the stock
+    # install-dynamic-plugins init container. Consumers do not replace the
+    # installer list or reproduce its seven install volumes.
+    # NOTE: no app-config.veecode.yaml here — the image deleted that file at
+    # 3.0.0-beta.1 (M4.6) and the pre-step bails SILENTLY (warn + exit 0) on a
+    # missing --config, which would break marketplace persistence invisibly.
+    preInstallCommand: >-
+      node /opt/app-root/src/veecode/regenerate-extensions-install.js
+      --config app-config.yaml
+      --config app-config.example.yaml
+      --config app-config.example.production.yaml
   # -- Catalog index configuration for automatic plugin discovery.
   # The `install-dynamic-plugins.py` script pulls this image if the `CATALOG_INDEX_IMAGE` environment variable is set.
   # The `dynamic-plugins.default.yaml` file will be extracted and written to `dynamic-plugins-root` volume mount.
@@ -189,13 +500,20 @@ global:
 # -- Upstream Backstage [chart configuration](https://github.com/backstage/charts/blob/main/charts/backstage/values.yaml)
 # @default -- Use Openshift compatible settings
 upstream:
+  serviceAccount:
+    # The Kubernetes plugin ClusterRoleBinding targets this chart-owned account.
+    create: true
+    name: ""
   nameOverride: developer-hub
   backstage:
     image:
-      registry: quay.io
-      repository: rhdh-community/rhdh
-      tag: next
-      pullPolicy: ""
+      registry: docker.io
+      repository: veecode/devportal
+      # This is the proven 3.0.0-alpha.5 image. A later commit will re-point
+      # this tag/appVersion/digest tuple to 3.0.0-beta.1 after Front 1 publishes it.
+      tag: 3.0.0-alpha.5
+      digest: sha256:e6d2e6e3e1200a58bb4b237621ff154d7a0c785adab3c5fee4ba8e535c113a14
+      pullPolicy: IfNotPresent
     command: []
     # FIXME (tumido): USE POSTGRES_PASSWORD and POSTGRES_USER instead of POSTGRES_ADMIN_PASSWORD
     # This is a hack. In {fedora,rhel}/postgresql images, regular user is forbidden
@@ -215,9 +533,13 @@ upstream:
         cors:
           origin: 'https://{{- include "rhdh.hostname" . }}'
         database:
+          client: pg
           connection:
-            password: ${POSTGRESQL_ADMIN_PASSWORD}
-            user: postgres
+            host: ${PG_HOST}
+            port: ${PG_PORT}
+            user: ${PG_USER}
+            password: ${PG_PASSWORD}
+            database: ${PG_DATABASE}
         auth:
           externalAccess:
             - type: legacy
@@ -280,17 +602,19 @@ upstream:
       periodSeconds: 10
       successThreshold: 1
       timeoutSeconds: 4
-    extraEnvVars:
-      - name: BACKEND_SECRET
-        valueFrom:
-          secretKeyRef:
-            key: backend-secret
-            name: '{{ include "rhdh.backend-secret-name" $ }}'
-      - name: POSTGRESQL_ADMIN_PASSWORD
-        valueFrom:
-          secretKeyRef:
-            key: '{{- include "rhdh.postgresql.adminPasswordKey" . }}'
-            name: '{{- include "rhdh.postgresql.secretName" . }}'
+    extraEnvVars: []
+    # Per-deployment runtime database secret. Override this list when the
+    # customer uses a different Secret name; the chart reuses its first item
+    # for the marketplace pre-step's POSTGRES_* references.
+    extraEnvVarsSecrets:
+      - veecode-runtime-secrets
+    extraAppConfig:
+      - configMapRef: veecode-auth
+        filename: app-config.veecode-auth.yaml
+      - configMapRef: veecode-branding
+        filename: app-config.veecode-branding.yaml
+      - configMapRef: veecode-extensions-config
+        filename: app-config.extensions.yaml
     args:
       # This additional `app-config`` file is generated by the initContainer below, and contains the merged configuration of installed dynamic plugins.
       - "--config"
@@ -303,6 +627,8 @@ upstream:
         mountPath: /extensions
       - name: temp
         mountPath: /tmp
+      - name: m3data
+        mountPath: /m3data
     extraVolumes:
       # -- Ephemeral volume that will contain the dynamic plugins installed by the initContainer below at start.
       - name: dynamic-plugins-root
@@ -344,6 +670,8 @@ upstream:
         emptyDir: {}
       - name: temp
         emptyDir: {}
+      - name: m3data
+        emptyDir: {}
     initContainers:
       - name: install-dynamic-plugins
         resources:
@@ -376,9 +704,36 @@ upstream:
           - name: MAX_ENTRY_SIZE
             value: "40000000"
           - name: CATALOG_INDEX_IMAGE
-            value: '{{ .Values.global.catalogIndex.image.registry }}/{{ .Values.global.catalogIndex.image.repository }}:{{ .Values.global.catalogIndex.image.tag }}'
+            value: quay.io/veecode/plugin-catalog-index@sha256:62da454a987e26c0d664bf4d4af27db7300b49cf499ecc6489a1531f9b08417f
           - name: CATALOG_ENTITIES_EXTRACT_DIR
-            value: '/extensions'
+            value: /m3data/catalog-entities-extract
+          - name: DEVPORTAL_DB_PATH
+            value: /m3data
+          - name: POSTGRES_HOST
+            valueFrom:
+              secretKeyRef:
+                name: '{{ first .Values.backstage.extraEnvVarsSecrets }}'
+                key: PG_HOST
+          - name: POSTGRES_PORT
+            valueFrom:
+              secretKeyRef:
+                name: '{{ first .Values.backstage.extraEnvVarsSecrets }}'
+                key: PG_PORT
+          - name: POSTGRES_USER
+            valueFrom:
+              secretKeyRef:
+                name: '{{ first .Values.backstage.extraEnvVarsSecrets }}'
+                key: PG_USER
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: '{{ first .Values.backstage.extraEnvVarsSecrets }}'
+                key: PG_PASSWORD
+          - name: POSTGRES_DATABASE
+            valueFrom:
+              secretKeyRef:
+                name: '{{ first .Values.backstage.extraEnvVarsSecrets }}'
+                key: PG_DATABASE
         imagePullPolicy: ""
         volumeMounts:
           - mountPath: /dynamic-plugins-root
@@ -400,6 +755,8 @@ upstream:
             mountPath: /extensions
           - name: temp
             mountPath: /tmp
+          - name: m3data
+            mountPath: /m3data
         workingDir: /opt/app-root/src
     installDir: /opt/app-root/src
   ingress:
@@ -410,7 +767,7 @@ upstream:
       path: /metrics
       port: http-metrics
   postgresql:
-    enabled: true
+    enabled: false
     postgresqlDataDir: /var/lib/pgsql/data/userdata
     serviceBindings:
       enabled: true
@@ -460,7 +817,7 @@ route:
   # -- Route specific annotations
   annotations: {}
   # -- Enable the creation of the route resource
-  enabled: true
+  enabled: false
   # -- Set the host attribute to a custom value. If not set, OpenShift will generate it, please make sure to match your baseUrl
   host: "{{ .Values.global.host }}"
   # -- Path that the router watches for, to route traffic for to the service.
@@ -489,7 +846,7 @@ route:
 # -- Test pod parameters
 test:
   # -- Whether to enable the test-connection pod used for testing the Release using `helm test`.
-  enabled: true
+  enabled: false
   image:
     # -- Test connection pod image registry
     registry: quay.io

@@ -7,6 +7,8 @@
 {{- $lightspeedRuntimeVolumeType = include "rhdh.lightspeed.runtimeVolumeType" (dict "volume" $lightspeed.runtimeVolume "path" "global.lightspeed.runtimeVolume") -}}
 {{- end -}}
 {{- $extraCatalogImages := include "rhdh.catalogIndex.extraImagesEnvValue" . | trim -}}
+{{- $guestAuthEnabled := .Values.global.veecode.guestAuth.enabled -}}
+{{- $preInstallCommand := .Values.global.veecode.preInstallCommand | default "" -}}
 ---
 apiVersion: {{ include "common.capabilities.deployment.apiVersion" . }}
 kind: Deployment
@@ -82,9 +84,11 @@ spec:
       volumes:
         {{- if (or .Values.backstage.extraAppConfig (and .Values.backstage.extraVolumeMounts .Values.backstage.extraVolumes)) }}
         {{- range .Values.backstage.extraAppConfig }}
+        {{- if or (ne .configMapRef "veecode-auth") $guestAuthEnabled }}
         - name: {{ .configMapRef }}
           configMap:
             name: {{ .configMapRef }}
+        {{- end }}
         {{- end }}
         {{- if .Values.backstage.extraVolumes }}
           {{- include "common.tplvalues.render" ( dict "value" .Values.backstage.extraVolumes "context" $ ) | nindent 8 }}
@@ -128,6 +132,13 @@ spec:
         {{- if not $hasExisting }}
         {{- $_ := set $container "env" (append (default list (index $container "env")) (dict "name" "EXTRA_CATALOG_INDEX_IMAGES" "value" $extraCatalogImages)) }}
         {{- end }}
+        {{- end }}
+        {{- if and $preInstallCommand (eq (index $container "name") "install-dynamic-plugins") }}
+        {{- $installCommand := join " " (default list (index $container "command")) }}
+        {{- $installArgs := join " " (default list (index $container "args")) }}
+        {{- $installStep := trim (printf "%s %s" $installCommand $installArgs) }}
+        {{- $_ := set $container "command" (list "/bin/sh" "-c") }}
+        {{- $_ := set $container "args" (list (printf "%s && exec %s" $preInstallCommand $installStep)) }}
         {{- end }}
         - {{ $container | toYaml | nindent 10 | trim }}
         {{- end }}
@@ -182,8 +193,10 @@ spec:
           {{- end }}
           {{- if .Values.backstage.extraAppConfig }}
           {{- range .Values.backstage.extraAppConfig }}
+          {{- if or (ne .configMapRef "veecode-auth") $guestAuthEnabled }}
             - "--config"
             - "{{ $installDir }}/{{ .filename }}"
+          {{- end }}
           {{- end }}
           {{- end }}
           {{- if .Values.backstage.appConfig }}
@@ -243,9 +256,11 @@ spec:
           {{- if (or .Values.backstage.extraAppConfig .Values.backstage.appConfig (and .Values.backstage.extraVolumeMounts .Values.backstage.extraVolumes)) }}
           volumeMounts:
             {{- range .Values.backstage.extraAppConfig }}
+            {{- if or (ne .configMapRef "veecode-auth") $guestAuthEnabled }}
             - name: {{ .configMapRef }}
               mountPath: "{{ $installDir }}/{{ .filename }}"
               subPath: {{ .filename }}
+            {{- end }}
             {{- end }}
             {{- if .Values.backstage.appConfig }}
             - name: backstage-app-config
