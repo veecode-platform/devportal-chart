@@ -44,7 +44,6 @@ sources:
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
 # VeeCode owns this chart version independently from the upstream chart version recorded above.
 version: 0.1.0
-# The pinned image digest is the proven 3.0.0-alpha.5 build. Re-point this
-# appVersion and the image tag/digest together when the 3.0.0-beta.1 image is
-# published (Front 1); the chart version remains independently numbered.
-appVersion: 3.0.0-alpha.5
+# The image tag/digest and appVersion have been re-pointed together to the
+# published 3.0.0-beta.1 build; the chart version remains independently numbered.
+appVersion: 3.0.0-beta.1

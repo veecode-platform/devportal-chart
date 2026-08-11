@@ -333,8 +333,11 @@ global:
     # NOTE: no app-config.veecode.yaml here — the image deleted that file at
     # 3.0.0-beta.1 (M4.6) and the pre-step bails SILENTLY (warn + exit 0) on a
     # missing --config, which would break marketplace persistence invisibly.
+    # Relative invocation on purpose: the image ships the pre-step at
+    # /opt/app-root/src/regenerate-extensions-install.js (the init container's
+    # working directory) — same invocation the M4.5 harness proved live.
     preInstallCommand: >-
-      node /opt/app-root/src/veecode/regenerate-extensions-install.js
+      node regenerate-extensions-install.js
       --config app-config.yaml
       --config app-config.example.yaml
       --config app-config.example.production.yaml
@@ -509,10 +512,9 @@ upstream:
     image:
       registry: docker.io
       repository: veecode/devportal
-      # This is the proven 3.0.0-alpha.5 image. A later commit will re-point
-      # this tag/appVersion/digest tuple to 3.0.0-beta.1 after Front 1 publishes it.
-      tag: 3.0.0-alpha.5
-      digest: sha256:e6d2e6e3e1200a58bb4b237621ff154d7a0c785adab3c5fee4ba8e535c113a14
+      # This is the published 3.0.0-beta.1 image; its tag/digest matches appVersion.
+      tag: 3.0.0-beta.1
+      digest: sha256:550685161568c1759061196584e168d587f79168216f8de9bf4f5190063f278a
       pullPolicy: IfNotPresent
     command: []
     # FIXME (tumido): USE POSTGRES_PASSWORD and POSTGRES_USER instead of POSTGRES_ADMIN_PASSWORD
