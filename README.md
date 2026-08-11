@@ -1,18 +1,24 @@
 
-# UPDATE
+# VeeCode DevPortal Helm chart
 
-This repository now houses the only RHDH CI Helm chart after merging with the now deprecated repository: https://github.com/rhdh-bot/openshift-helm-charts/. 
+This repository contains the VeeCode DevPortal chart: a renamed fork of [redhat-developer/rhdh-chart](https://github.com/redhat-developer/rhdh-chart), pinned at `backstage-7.0.1`. VeeCode defaults are baked into the chart, which is published as `devportal` through the [`next-charts`](https://veecode-platform.github.io/next-charts) channel.
 
-See:  https://issues.redhat.com/browse/RHIDP-1477
+## Install — STAGING
 
-# RHDH Helm Chart for OpenShift
+The DevPortal 3.x installation instructions are **STAGING** until promoted: follow the [DevPortal 3.x preview install guide](https://docs-next.platform.vee.codes/devportal/installation-guide/v3-preview/intro/).
 
-See [charts/backstage/README.md](charts/backstage/README.md).
+After preparing the Secret and `values.yaml` described there, the pinned chart install is:
 
-# RHDH orchestrator infra Helm chart for Openshift
+```console
+helm install devportal veecode/devportal --version 0.1.0 -n devportal --create-namespace -f values.yaml
+```
 
-See [charts/orchestrator-infra/README.md](charts/orchestrator-infra/README.md)
+Guest sign-in is enabled by default and maps the guest identity to the `ADMIN` user. This is useful for evaluation but dangerous for anything exposed; set `global.veecode.guestAuth.enabled: false` and configure a real authentication provider before exposing the portal.
 
-## Contributing and reporting issues
+## Upstream attribution and license
 
-To report issues against this chart, please use JIRA (not GH issues): https://issues.redhat.com/browse/RHIDP
+The fork retains the upstream RHDH chart lineage and Apache-2.0 licensing; see [LICENSE](LICENSE). The upstream chart was consolidated with the deprecated [`rhdh-bot/openshift-helm-charts`](https://github.com/rhdh-bot/openshift-helm-charts/) repository as recorded in [RHIDP-1477](https://issues.redhat.com/browse/RHIDP-1477). The upstream-shaped chart documentation remains in [charts/backstage/README.md](charts/backstage/README.md).
+
+## Drift manifest
+
+The pinned upstream baseline, VeeCode-owned seams, and resync rules are documented in [AGENTS.md](AGENTS.md).

@@ -29,6 +29,8 @@ When an upstream-shaped edit is unavoidable, keep it localized, update this
 manifest in the same change, and revalidate the rendered chart. A change that
 is not listed here is eligible to disappear during the next upstream resync.
 
+- baseUrl scheme is hardcoded https in the vendored template; a scheme/URL override in values would let local evaluators keep the minimal values file (candidate for 0.1.1, decision pending)
+
 ## Drift manifest
 
 | Path | Why | Upstream impact |
