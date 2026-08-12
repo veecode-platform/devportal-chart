@@ -43,7 +43,28 @@ sources:
 # to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
 # VeeCode owns this chart version independently from the upstream chart version recorded above.
-version: 0.1.0
+version: 0.1.3
 # The image tag/digest and appVersion have been re-pointed together to the
 # published 3.0.0-beta.1 build; the chart version remains independently numbered.
+# 0.1.x (M4.7): reproduce the VeeCode 2.x default face on the layered chart.
+#  - plugins/face: add Docs/TechDocs, Notifications/Signals, Tech Radar via
+#    global.dynamic.plugins; remove upstream Learning Paths; branding +
+#    help/support exposed as values.
+#  - UI fixes: header position above-main-content (was above-sidebar) and the
+#    CompanyLogo header mount removed — kills the full-width header + the
+#    stacked/duplicated logo, matching all three 2.x configs.
+#  - Theming ROOT fix: retire the OCI veecode-theme (old @backstage/theme form)
+#    and configure RHDH-native theming via app-config (variant: rhdh + VeeCode
+#    palette). The 3.x shell reads palette.rhdh.general.* for its layout math;
+#    the old theme did not implement it, which caused the sidebar<->content gap,
+#    the Administration-expand shift, and the full-height loader. All resolved.
+# 0.1.3 sidebar polish (all config, image stays dumb):
+#  - Sidebar Search item OFF via app.sidebar.search (shell toggle, not image).
+#  - Sidebar order set via menu-item priority: Home > Catalog > APIs > Docs >
+#    Self-service > Notifications > Tech Radar > Marketplace. Dynamic-plugin
+#    items carry priority in a menuItems block (the inline dynamicRoute menuItem
+#    drops priority); core items deep-merge priority over the built-in defaults.
+#  - Help/Support points at the VeeCode 2.x destination
+#    (github.com/veecode-platform/support/discussions), not docs.veecode.io.
+# appVersion unchanged: chart-only change; the image stays dumb.
 appVersion: 3.0.0-beta.1

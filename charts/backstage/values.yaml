@@ -110,6 +110,42 @@ global:
                     title: Administration
                     textKey: menuItem.administration
                     icon: admin
+                  # Learning Paths is an upstream RHDH default menu item, never
+                  # shipped by VeeCode 2.x — remove it from the default sidebar
+                  # (M4.7 decision-round ruling 1). Slug verified against the
+                  # running 3.0.0-beta.1 image bundle: default.learning-path.
+                  default.learning-path:
+                    enabled: false
+                  # Sidebar order (M4.7). priority sorts DESC (higher = top).
+                  # These deep-merge with the built-in DefaultMainMenuItems
+                  # (packages/app/src/consts.ts), overriding ONLY priority and
+                  # keeping each item's title/icon/route. Target order:
+                  # Home > Catalog > APIs > Docs > Self-service > Notifications
+                  # > Tech Radar > Marketplace. The dynamic-plugin items carry
+                  # their priority in their own menuItems block (near each
+                  # plugin below) because the inline dynamicRoute menuItem form
+                  # DROPS priority (extractDynamicConfigFrontend.ts:96-104).
+                  default.home:
+                    priority: 100
+                  default.catalog:
+                    priority: 96
+                  default.apis:
+                    priority: 92
+                  # Docs promoted into the CORE group (name starts with
+                  # `default.`) so it sits between APIs and Self-service — the
+                  # order Gio asked for, which crosses the core/plugin divider a
+                  # plugin-named item cannot. Full definition (title/icon/to),
+                  # not just priority: there is no built-in default.docs to
+                  # deep-merge with. `to: docs` targets the /docs route
+                  # registered by the techdocs dynamicRoute above; `icon: docs`
+                  # resolves via the techdocs appIcon (getSystemIcon).
+                  default.docs:
+                    title: Docs
+                    icon: docs
+                    to: docs
+                    priority: 88
+                  default.create:
+                    priority: 84
               red-hat-developer-hub.backstage-plugin-global-header:
                 translationResources:
                   - importName: globalHeaderTranslations
@@ -118,13 +154,17 @@ global:
                   - mountPoint: application/header
                     importName: GlobalHeader
                     config:
-                      position: above-sidebar
-                  - mountPoint: global.header/component
-                    importName: CompanyLogo
-                    config:
-                      priority: 200
-                      props:
-                        to: "/"
+                      # GAP-008/reverse-gap (M4.7): above-sidebar makes the header
+                      # span the FULL width (over the sidebar), which is what
+                      # created the full-width header + the stacked/duplicated logo.
+                      # All three 2.x configs use above-main-content — the header
+                      # sits to the RIGHT of the sidebar, logo lives in the sidebar
+                      # only. Match 2.x.
+                      position: above-main-content
+                  # GAP-008 (M4.7): the sidebar already renders app.branding.fullLogo
+                  # unconditionally, so mounting CompanyLogo here too produced the
+                  # duplicated/stacked wordmark. All three 2.x configs are
+                  # sidebar-only (no header logo) — so this mount is removed.
                   - mountPoint: global.header/component
                     importName: SearchComponent
                     config:
@@ -216,9 +256,16 @@ global:
                     parent: default.admin
                     icon: rbacIcon
 
-      # ── Theme (VeeCode theme via OCI; id-collision light/dark replace) ─────
+      # ── Theme ─────────────────────────────────────────────────────────────
+      # M4.7 ROOT fix: the OCI veecode-theme was the OLD @backstage/theme
+      # createUnifiedTheme form and did NOT implement RHDH's palette.rhdh.general.*
+      # contract that the 3.x shell requires — the cause of the sidebar<->content
+      # gap, the Administration-expand shift, and the full-height green loader.
+      # Replaced by RHDH-native theming configured via app-config
+      # (files/veecode/app-config.veecode-product.yaml, app.branding.theme.*,
+      # variant: rhdh). Disabled (not deleted) as a one-line revert.
       - package: oci://quay.io/veecode/veecode-theme:bs_1.49.4!veecode-platform-plugin-veecode-theme
-        disabled: false
+        disabled: true
         pluginConfig:
           dynamicPlugins:
             frontend:
@@ -304,6 +351,91 @@ global:
                   marketplace:
                     title: Marketplace
                     icon: pluginsIcon
+                    priority: 72
+
+      # ══ 0.1.1 — VeeCode 2.x default face, delivered via chart (M4.7) ═══════
+      # Package refs verified against the running 3.0.0-beta.1 image's
+      # /opt/app-root/src/dynamic-plugins/dist/ directory.
+      # ── Docs / TechDocs (GAP-001; RHDH default frontend config — registers
+      #    the /docs route + the sidebar "Docs" item + the entity docs tab) ───
+      - package: ./dynamic-plugins/dist/backstage-plugin-techdocs
+        disabled: false
+        pluginConfig:
+          dynamicPlugins:
+            frontend:
+              backstage.plugin-techdocs:
+                appIcons:
+                  - name: docs
+                    importName: LibraryBooks
+                dynamicRoutes:
+                  # /docs route only — NO inline menuItem. The Docs sidebar entry
+                  # is promoted into the CORE menu group as `default.docs` (see
+                  # default.main-menu-items below) so it can sit BETWEEN APIs and
+                  # Self-service. The app-shell renders default.* items and plugin
+                  # items as two divider-separated groups (Root.tsx
+                  # renderMenuItems filters on the `default.` name prefix), so a
+                  # plugin-named "docs" item can never cross into the core group
+                  # by priority alone.
+                  - path: /docs
+                    importName: TechDocsIndexPage
+                  - path: /docs/:namespace/:kind/:name/*
+                    importName: TechDocsReaderPage
+                mountPoints:
+                  - mountPoint: entity.page.docs/cards
+                    importName: EntityTechdocsContent
+      - package: ./dynamic-plugins/dist/backstage-plugin-techdocs-backend-dynamic
+        disabled: false
+      - package: ./dynamic-plugins/dist/backstage-plugin-techdocs-module-addons-contrib
+        disabled: false
+      # ── Notifications + Signals (GAP-003; frontend config registers the
+      #    /notifications route + the sidebar "Notifications" item) ───────────
+      - package: ./dynamic-plugins/dist/backstage-plugin-notifications
+        disabled: false
+        pluginConfig:
+          dynamicPlugins:
+            frontend:
+              backstage.plugin-notifications:
+                dynamicRoutes:
+                  - path: /notifications
+                    importName: NotificationsPage
+                    menuItem:
+                      icon: notifications
+                      text: Notifications
+                menuItems:
+                  notifications:
+                    priority: 80
+      - package: ./dynamic-plugins/dist/backstage-plugin-signals
+        disabled: false
+      - package: ./dynamic-plugins/dist/backstage-plugin-notifications-backend-dynamic
+        disabled: false
+      - package: ./dynamic-plugins/dist/backstage-plugin-signals-backend-dynamic
+        disabled: false
+      # ── Tech Radar (GAP-005; pluginConfig copied from 2.x recommended.yaml:44-66) ─
+      - package: ./dynamic-plugins/dist/backstage-community-plugin-tech-radar
+        disabled: false
+        pluginConfig:
+          dynamicPlugins:
+            frontend:
+              backstage-community.plugin-tech-radar:
+                appIcons:
+                  - name: techRadar
+                    importName: TechRadarIcon
+                dynamicRoutes:
+                  - path: /tech-radar
+                    importName: TechRadarPage
+                    menuItem:
+                      icon: techRadar
+                      text: Tech Radar
+                      textKey: menuItem.techRadar
+                    config:
+                      props:
+                        width: 1500
+                        height: 800
+                menuItems:
+                  tech-radar:
+                    priority: 76
+      - package: ./dynamic-plugins/dist/backstage-community-plugin-tech-radar-backend-dynamic
+        disabled: false
 
   # -- Shorthand for users who do not want to specify a custom HOSTNAME. Used ONLY with the DEFAULT upstream.backstage.appConfig value and with OCP Route enabled.
   clusterRouterBase: "apps.example.com"
@@ -327,6 +459,26 @@ global:
     # !!! is still off until the later M6 decision.
     guestAuth:
       enabled: true
+    # Branding exposed as VALUES (M4.7 decision-round ruling 4). Defaults
+    # reproduce the baked VeeCode brand; a consumer overrides title/width or
+    # supplies its own logo without editing any file. Loaded LAST in the
+    # --config chain (see extraAppConfig veecode-product), so these win.
+    branding:
+      title: "VeeCode DevPortal"
+      fullLogoWidth: 180
+      # Optional base64 data-URI overrides; empty keeps the baked logo/icon
+      # from app-config.veecode-branding.yaml.
+      fullLogo: ""
+      iconLogo: ""
+    # Help/Support menu destinations — point at VeeCode, not upstream RHDH
+    # (M4.7 decision-round ruling 2).
+    support:
+      # VeeCode 2.x support destination: the GitHub Discussions of the
+      # veecode-platform/support repo (chart V1 values.yaml:177). Both the
+      # header Support button (url) and the dropdown link (docsUrl) point here.
+      url: "https://github.com/veecode-platform/support/discussions"
+      subtitle: "VeeCode DevPortal support"
+      docsUrl: "https://github.com/veecode-platform/support/discussions"
     # The vendored deployment template prepends this command to the stock
     # install-dynamic-plugins init container. Consumers do not replace the
     # installer list or reproduce its seven install volumes.
@@ -617,6 +769,10 @@ upstream:
         filename: app-config.veecode-branding.yaml
       - configMapRef: veecode-extensions-config
         filename: app-config.extensions.yaml
+      # Product identity (branding-as-values, help/support, techdocs, real
+      # Tech Radar URL). LAST so it overrides earlier fragments. M4.7 / 0.1.1.
+      - configMapRef: veecode-product
+        filename: app-config.veecode-product.yaml
     args:
       # This additional `app-config`` file is generated by the initContainer below, and contains the merged configuration of installed dynamic plugins.
       - "--config"

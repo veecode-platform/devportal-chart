@@ -29,3 +29,14 @@ metadata:
 data:
   app-config.extensions.yaml: |
 {{ .Files.Get "files/veecode/app-config.extensions.yaml" | nindent 4 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: veecode-product
+  labels:
+    {{- include "common.labels.standard" . | nindent 4 }}
+data:
+  # Rendered through `tpl` so global.veecode.branding/support values resolve.
+  app-config.veecode-product.yaml: |
+{{ tpl (.Files.Get "files/veecode/app-config.veecode-product.yaml") . | nindent 4 }}
