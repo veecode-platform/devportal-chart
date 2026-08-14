@@ -15,13 +15,17 @@ global:
       - /m3data/extensions-install.yaml
     plugins:
       # ── Home ────────────────────────────────────────────────────────────
-      # Q1 REVISITED (2026-08-11, pending Gio's ratification): the VeeCode
-      # analytics home is being tried back as the 3.x default, replacing
-      # upstream's search+cards IA. `/` is the ONE route RHDH lets a dynamic
-      # plugin override — but the loader does NOT dedupe competing `path: /`
-      # entries (first registered wins), and the VeeCode plugin registers its
-      # OWN `visitsApiRef` factory, which would collide with this plugin's.
-      # So this entry must be DISABLED, not merely stripped of its route.
+      # Q1 RESOLVED (2026-08-14): the VeeCode analytics home is the 3.x
+      # default. This entry must stay DISABLED, and re-enabling it is dead
+      # for TWO independent reasons, both verified in source:
+      # 1. visitsApiRef collision is FATAL — two plugin factories for the
+      #    same ref make AppManager THROW at boot (not "first wins";
+      #    ApiFactoryRegistry rejects equal-priority registration and
+      #    AppManager raises). The VeeCode home registers its own factory.
+      # 2. This plugin's VisitListener is gated on home.page/cards entries
+      #    (RecentlyVisitedCard/TopVisitedCard displayNames) the VeeCode
+      #    home never registers — it would be a no-op anyway. The recorder
+      #    is provided by the veecode-homepage plugin itself (below).
       # Kept in full (disabled) as the one-line revert.
       - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-dynamic-home-page
         disabled: true
@@ -71,17 +75,19 @@ global:
                         xxs: { w: 12, h: 4 }
 
       # VeeCode analytics home (greeting + highlighted card + stat cards +
-      # summary + visited charts) — the 2.x default, delivered here by the
-      # same remote-npm + integrity mechanism already proven for `about`
-      # (M4 Q4). pluginConfig copied verbatim from 2.x
-      # (devportal-platform/dynamic-plugins.yaml:27-43), minus `preInstalled`
-      # (unsupported by this installer — see the header note).
-      # KNOWN RISK: the published artifact declares `supported-versions: 1.49.0`
-      # and hard-pins `@scalprum/react-core@0.9.5`; the shell here is Backstage
-      # 1.52. If the route 404s or mounts blank, check the browser console for
-      # scalprum/shared-scope errors FIRST.
-      - package: "@veecode-platform/plugin-veecode-homepage-dynamic@1.1.0"
-        integrity: "sha512-KwLOR/deMqxDL8fgdGlvlvyvnyx7eYh8ckZS7a/45uNVd0+rw9s6ZPkb7sbN8NN64rNopzLCGsP+OaX0lTS1Pg=="
+      # summary + visited charts) — the 2.x default. Delivered from the
+      # export-overlays OCI pipeline (workspaces/veecode-homepage pinning
+      # devportal-plugins@08980aa1), the same channel as veecode-theme —
+      # devportal-plugins is source-only, its npm publish path is retired.
+      # The bundle carries the VisitListener export and the config.d.ts and
+      # useVisited(orderBy) fixes; source supported-versions is 1.49.2
+      # against this 1.52 shell. If the route 404s or mounts blank, check
+      # the browser console for scalprum/shared-scope errors FIRST.
+      # Pinned by DIGEST (the installer's documented integrity mechanism,
+      # docs/dynamic-plugins/installing-plugins.md:142) — bs_* tags are
+      # mutable in the overlays fleet (retag promotion). Digest below is
+      # tag bs_1.54.0-next.0 at publish time; bumping = new digest here.
+      - package: oci://quay.io/veecode/veecode-homepage@sha256:8178bc998a9c3b63138b2e320aa607249a8041d7ce44db6fc3cbf7b220b9e926!veecode-platform-plugin-veecode-homepage
         disabled: false
         pluginConfig:
           dynamicPlugins:
@@ -97,6 +103,17 @@ global:
                       props:
                         width: 1500
                         height: 800
+                # Visit recorder — completes the recorder/storage/readers trio
+                # this plugin owns. The v3 shell mounts no VisitListener of its
+                # own (2.x mounted it statically in AppBase); it only consumes
+                # the application/listener mount point, so without this entry
+                # visitsApi.save() is never called and the "Recently/Top
+                # visited" cards stay empty. Note the loader ignores
+                # config.props/config.if on this mount point, and a missing
+                # export fails SILENTLY (console warning only).
+                mountPoints:
+                  - mountPoint: application/listener
+                    importName: VisitListener
 
       # ── Header (rich default; owns default.admin sidebar group) ───────────
       - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-global-header
