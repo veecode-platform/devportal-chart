@@ -43,7 +43,7 @@ sources:
 # to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
 # VeeCode owns this chart version independently from the upstream chart version recorded above.
-version: 0.1.4
+version: 0.1.5
 # The image tag/digest and appVersion have been re-pointed together to the
 # published 3.0.0-beta.1 build; the chart version remains independently numbered.
 # 0.1.x (M4.7): reproduce the VeeCode 2.x default face on the layered chart.
