@@ -88,7 +88,7 @@ global:
       # docs/dynamic-plugins/installing-plugins.md:142) — bs_* tags are
       # mutable in the overlays fleet (retag promotion). Digest below is
       # tag bs_1.52.0 at publish time; bumping = new digest here.
-      - package: oci://quay.io/veecode/veecode-homepage@sha256:67be3d2df470210e8ac2e4d4738942c58fa514945a0a6f70353c673979e3d0b5!veecode-platform-plugin-veecode-homepage
+      - package: oci://quay.io/veecode/veecode-homepage@sha256:13f6f2f61575d8523e90f2256e5711e5141670ae7ed717229524f3f23bc6d99a!veecode-platform-plugin-veecode-homepage
         disabled: false
         pluginConfig:
           dynamicPlugins:
