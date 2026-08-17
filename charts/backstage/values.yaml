@@ -399,8 +399,26 @@ global:
                   - path: /docs/:namespace/:kind/:name/*
                     importName: TechDocsReaderPage
                 mountPoints:
+                  # `layout` is NOT optional here, and omitting it is a width bug,
+                  # not a cosmetic default. DynamicEntityTab renders every mount
+                  # point as `<Box sx={config.layout}>` inside a
+                  # `repeat(12, minmax(0,1fr))` grid container
+                  # (packages/app/src/components/catalog/EntityPage/
+                  # DynamicEntityTab.tsx), so a card with no layout takes ONE of
+                  # twelve columns — the TechDocs reader rendered at 115px inside a
+                  # 1624px tab. Upstream declares exactly this at
+                  # app-config.dynamic-plugins.yaml:547; measured 115px → 1624px.
+                  #
+                  # Upstream also carries `if: allOf: [isTechDocsAvailable]` here.
+                  # Deliberately NOT copied: it HIDES the Docs tab on entities with
+                  # no TechDocs annotation (measured — the tab disappears on the
+                  # m5-orders-demo fixture), which is a product decision about
+                  # entities without docs, not part of this width fix.
                   - mountPoint: entity.page.docs/cards
                     importName: EntityTechdocsContent
+                    config:
+                      layout:
+                        gridColumn: "1 / -1"
       - package: ./dynamic-plugins/dist/backstage-plugin-techdocs-backend-dynamic
         disabled: false
       - package: ./dynamic-plugins/dist/backstage-plugin-techdocs-module-addons-contrib
