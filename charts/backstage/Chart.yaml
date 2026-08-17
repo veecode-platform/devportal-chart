@@ -43,7 +43,14 @@ sources:
 # to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
 # VeeCode owns this chart version independently from the upstream chart version recorded above.
-version: 0.1.7
+version: 0.1.8
+# 0.1.8: Tech Radar stops answering 502. `techRadar.url` was ported from the 2.x
+#  config without its companion `backend.reading.allow` entry, and the RHDH plugin
+#  fetches through the backend UrlReader, which refuses unlisted hosts — so every
+#  Tech Radar load failed while the page still rendered, from 0.1.3 (when Tech Radar
+#  was added for face parity) to here. Also corrects the product fragment's header:
+#  it is loaded LATE, not last — `app-config-from-configmap.yaml` (the deployment's
+#  own appConfig) comes after it, which matters because app-config arrays replace.
 # 0.1.7: TechDocs entity tab renders at full width. The docs mount point carried
 #  no `config.layout`, and DynamicEntityTab wraps every mount point in
 #  `<Box sx={config.layout}>` inside a 12-column grid — so the reader took one
