@@ -43,7 +43,18 @@ sources:
 # to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
 # VeeCode owns this chart version independently from the upstream chart version recorded above.
-version: 0.1.8
+version: 0.1.9
+# 0.1.9: the marketplace pre-step sees the operator's appConfig. The init
+#  container's regenerate-extensions-install.js read only the image-baked
+#  app-configs, so `backend.database.prefix` (declared in the deployment's own
+#  appConfig) was invisible to it — on a shared Postgres it fell back to the
+#  `backstage_plugin_` default and read the wrong release's extensions database
+#  (the v3 first-boot defect). Fix, pure values, no vendored-template edit: mount
+#  the `backstage-app-config` ConfigMap into backstage.initContainers[0] and
+#  append `--config app-config-from-configmap.yaml` (last) to
+#  global.veecode.preInstallCommand. The pre-step now reads the same config as
+#  the backend; per-tenant --config overrides for the DB prefix are no longer
+#  needed. Chart-only change, no image or appVersion move.
 # 0.1.8: Tech Radar stops answering 502. `techRadar.url` was ported from the 2.x
 #  config without its companion `backend.reading.allow` entry, and the RHDH plugin
 #  fetches through the backend UrlReader, which refuses unlisted hosts — so every
