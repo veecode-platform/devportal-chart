@@ -88,7 +88,7 @@ global:
       # docs/dynamic-plugins/installing-plugins.md:142) — bs_* tags are
       # mutable in the overlays fleet (retag promotion). Digest below is
       # tag bs_1.52.0 at publish time; bumping = new digest here.
-      - package: oci://quay.io/veecode/veecode-homepage@sha256:67be3d2df470210e8ac2e4d4738942c58fa514945a0a6f70353c673979e3d0b5!veecode-platform-plugin-veecode-homepage
+      - package: oci://quay.io/veecode/veecode-homepage@sha256:13f6f2f61575d8523e90f2256e5711e5141670ae7ed717229524f3f23bc6d99a!veecode-platform-plugin-veecode-homepage
         disabled: false
         pluginConfig:
           dynamicPlugins:
@@ -399,8 +399,26 @@ global:
                   - path: /docs/:namespace/:kind/:name/*
                     importName: TechDocsReaderPage
                 mountPoints:
+                  # `layout` is NOT optional here, and omitting it is a width bug,
+                  # not a cosmetic default. DynamicEntityTab renders every mount
+                  # point as `<Box sx={config.layout}>` inside a
+                  # `repeat(12, minmax(0,1fr))` grid container
+                  # (packages/app/src/components/catalog/EntityPage/
+                  # DynamicEntityTab.tsx), so a card with no layout takes ONE of
+                  # twelve columns — the TechDocs reader rendered at 115px inside a
+                  # 1624px tab. Upstream declares exactly this at
+                  # app-config.dynamic-plugins.yaml:547; measured 115px → 1624px.
+                  #
+                  # Upstream also carries `if: allOf: [isTechDocsAvailable]` here.
+                  # Deliberately NOT copied: it HIDES the Docs tab on entities with
+                  # no TechDocs annotation (measured — the tab disappears on the
+                  # m5-orders-demo fixture), which is a product decision about
+                  # entities without docs, not part of this width fix.
                   - mountPoint: entity.page.docs/cards
                     importName: EntityTechdocsContent
+                    config:
+                      layout:
+                        gridColumn: "1 / -1"
       - package: ./dynamic-plugins/dist/backstage-plugin-techdocs-backend-dynamic
         disabled: false
       - package: ./dynamic-plugins/dist/backstage-plugin-techdocs-module-addons-contrib
@@ -506,11 +524,25 @@ global:
     # Relative invocation on purpose: the image ships the pre-step at
     # /opt/app-root/src/regenerate-extensions-install.js (the init container's
     # working directory) — same invocation the M4.5 harness proved live.
+    #
+    # app-config-from-configmap.yaml is the LAST --config on purpose: it is the
+    # operator's own appConfig (the inline `backstage.appConfig` block, rendered
+    # into the <fullname>-app-config ConfigMap and mounted into THIS init
+    # container by backstage.initContainers[0].volumeMounts). The pre-step reads
+    # config via @backstage/config-loader from the --config files it is handed,
+    # so this is what makes it see `backend.database.prefix` (and anything else
+    # the operator sets) exactly as the backend does — a single source of truth,
+    # consumed by both. Without it the pre-step reads only the image-baked
+    # app-configs, which carry no prefix, falls back to `backstage_plugin_`, and
+    # on a shared Postgres reads whatever release owns that default prefix. That
+    # was the v3 first-boot defect; the tenant-side /tmp/prefix-override.yaml hack
+    # this replaces is now unnecessary.
     preInstallCommand: >-
       node regenerate-extensions-install.js
       --config app-config.yaml
       --config app-config.example.yaml
       --config app-config.example.production.yaml
+      --config app-config-from-configmap.yaml
   # -- Catalog index configuration for automatic plugin discovery.
   # The `install-dynamic-plugins.py` script pulls this image if the `CATALOG_INDEX_IMAGE` environment variable is set.
   # The `dynamic-plugins.default.yaml` file will be extracted and written to `dynamic-plugins-root` volume mount.
@@ -933,6 +965,18 @@ upstream:
             mountPath: /tmp
           - name: m3data
             mountPath: /m3data
+          # The operator's appConfig, so the marketplace pre-step
+          # (regenerate-extensions-install.js) reads the SAME config the backend
+          # does — see global.veecode.preInstallCommand, which appends this file
+          # as its last --config. `backstage-app-config` is the pod volume the
+          # vendored app-config-configmap template renders from `backstage.appConfig`
+          # (key app-config.yaml). REQUIRES a non-empty `backstage.appConfig`
+          # (the chart ships one by default); an operator who blanks appConfig
+          # entirely must also drop this mount, or the volume will not exist.
+          - name: backstage-app-config
+            mountPath: /opt/app-root/src/app-config-from-configmap.yaml
+            subPath: app-config.yaml
+            readOnly: true
         workingDir: /opt/app-root/src
     installDir: /opt/app-root/src
   ingress:

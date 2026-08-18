@@ -43,7 +43,32 @@ sources:
 # to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
 # VeeCode owns this chart version independently from the upstream chart version recorded above.
-version: 0.1.5
+version: 0.1.9
+# 0.1.9: the marketplace pre-step sees the operator's appConfig. The init
+#  container's regenerate-extensions-install.js read only the image-baked
+#  app-configs, so `backend.database.prefix` (declared in the deployment's own
+#  appConfig) was invisible to it — on a shared Postgres it fell back to the
+#  `backstage_plugin_` default and read the wrong release's extensions database
+#  (the v3 first-boot defect). Fix, pure values, no vendored-template edit: mount
+#  the `backstage-app-config` ConfigMap into backstage.initContainers[0] and
+#  append `--config app-config-from-configmap.yaml` (last) to
+#  global.veecode.preInstallCommand. The pre-step now reads the same config as
+#  the backend; per-tenant --config overrides for the DB prefix are no longer
+#  needed. Chart-only change, no image or appVersion move.
+# 0.1.8: Tech Radar stops answering 502. `techRadar.url` was ported from the 2.x
+#  config without its companion `backend.reading.allow` entry, and the RHDH plugin
+#  fetches through the backend UrlReader, which refuses unlisted hosts — so every
+#  Tech Radar load failed while the page still rendered, from 0.1.3 (when Tech Radar
+#  was added for face parity) to here. Also corrects the product fragment's header:
+#  it is loaded LATE, not last — `app-config-from-configmap.yaml` (the deployment's
+#  own appConfig) comes after it, which matters because app-config arrays replace.
+# 0.1.7: TechDocs entity tab renders at full width. The docs mount point carried
+#  no `config.layout`, and DynamicEntityTab wraps every mount point in
+#  `<Box sx={config.layout}>` inside a 12-column grid — so the reader took one
+#  column (measured 115px inside a 1624px tab). Upstream declares the same
+#  `gridColumn: "1 / -1"`; its companion `if: allOf: [isTechDocsAvailable]` is
+#  deliberately not carried, because it hides the tab on entities without docs.
+#  Chart-only change, no image or appVersion move.
 # The image tag/digest and appVersion have been re-pointed together to the
 # published 3.0.0-beta.1 build; the chart version remains independently numbered.
 # 0.1.x (M4.7): reproduce the VeeCode 2.x default face on the layered chart.
