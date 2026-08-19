@@ -475,6 +475,11 @@ upstream:
             value: /devportal-data/catalog-entities-extract
           - name: DEVPORTAL_DB_PATH
             value: /devportal-data
+            # Pins the marketplace regen's dedup source to the exact face path this
+            # chart wires into global.dynamic.includes (OD1 phase A hardening) — so
+            # dedup never silently falls back to the script's own default.
+          - name: DEVPORTAL_FACE_FILE
+            value: /opt/app-root/src/dynamic-plugins.veecode.yaml
           - name: POSTGRES_HOST
             valueFrom:
               secretKeyRef:

@@ -1,14 +1,12 @@
 
 # RHDH Backstage Helm Chart for OpenShift
 
-![Version: 7.0.1](https://img.shields.io/badge/Version-7.0.1-informational?style=flat-square)
+![Version: 0.1.10](https://img.shields.io/badge/Version-0.1.10-informational?style=flat-square)
 ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
 
-A Helm chart for deploying Red Hat Developer Hub, which is a Red Hat supported version of Backstage.
+A Helm chart for deploying VeeCode DevPortal, a VeeCode distribution of Backstage.
 
-The telemetry data collection feature is enabled by default. Red Hat Developer Hub sends telemetry data to Red Hat by using the `backstage-plugin-analytics-provider-segment` plugin. To disable this and to learn what data is being collected, see https://docs.redhat.com/en/documentation/red_hat_developer_hub/1.6/html-single/telemetry_data_collection_and_analysis/index
-
-**Homepage:** <https://red.ht/rhdh>
+**Homepage:** <https://docs.platform.vee.codes>
 
 ## Productized RHDH
 
@@ -21,7 +19,11 @@ For the **Generally Available** version of this chart, see:
 
 | Name | Email | Url |
 | ---- | ------ | --- |
-| Red Hat |  | <https://redhat.com> |
+| VeeCode |  | <https://veecode.com> |
+
+## Source Code
+
+* <https://github.com/veecode-platform/devportal-chart>
 
 ## TL;DR
 
@@ -29,12 +31,14 @@ For the **Generally Available** version of this chart, see:
 helm repo add bitnami https://charts.bitnami.com/bitnami
 helm repo add redhat-developer https://redhat-developer.github.io/rhdh-chart
 
-helm install my-backstage redhat-developer/backstage --version 7.0.1
+helm install my-backstage redhat-developer/backstage --version 0.1.10
 ```
 
 ## Introduction
 
 This chart bootstraps a [Backstage](https://backstage.io/docs/deployment/docker) deployment on a [Kubernetes](https://kubernetes.io) cluster using the [Helm](https://helm.sh) package manager.
+
+See [docs/product-face-overrides.md](../../docs/product-face-overrides.md) for how the VeeCode product face (`global.dynamic.includes[0]`) is baked into the image and how to customize or disable individual face plugins without dropping the rest.
 
 ## Prerequisites
 
@@ -163,17 +167,17 @@ Kubernetes: `>= 1.27.0-0`
 
 | Key | Description | Type | Default |
 |-----|-------------|------|---------|
-| global.auth | Enable service authentication within Backstage instance | object | `{"backend":{"enabled":true,"existingSecret":"","value":""}}` |
-| global.auth.backend | Backend service to service authentication <br /> Ref: https://backstage.io/docs/auth/service-to-service-auth/ | object | `{"enabled":true,"existingSecret":"","value":""}` |
-| global.auth.backend.enabled | Enable backend service to service authentication, unless configured otherwise it generates a secret value | bool | `true` |
+| global.auth | Enable service authentication within Backstage instance | object | `{"backend":{"enabled":false,"existingSecret":"","value":""}}` |
+| global.auth.backend | Backend service to service authentication <br /> Ref: https://backstage.io/docs/auth/service-to-service-auth/ | object | `{"enabled":false,"existingSecret":"","value":""}` |
+| global.auth.backend.enabled | Enable backend service to service authentication, unless configured otherwise it generates a secret value | bool | `false` |
 | global.auth.backend.existingSecret | Instead of generating a secret value, refer to existing secret | string | `""` |
 | global.auth.backend.value | Instead of generating a secret value, use the following value | string | `""` |
 | global.catalogIndex | Catalog index configuration for automatic plugin discovery. The `install-dynamic-plugins.py` script pulls this image if the `CATALOG_INDEX_IMAGE` environment variable is set. The `dynamic-plugins.default.yaml` file will be extracted and written to `dynamic-plugins-root` volume mount. | object | `{"extraImages":[],"image":{"registry":"quay.io","repository":"rhdh/plugin-catalog-index","tag":"next"}}` |
 | global.catalogIndex.extraImages | Extra catalog index images for additional plugin discovery in the Extensions UI. Each item must include `registry`, `repository`, and `tag` fields; `name` is optional. Only catalog entities are extracted from extra images (no `dynamic-plugins.default.yaml` handling). | list | `[]` |
 | global.clusterRouterBase | Shorthand for users who do not want to specify a custom HOSTNAME. Used ONLY with the DEFAULT upstream.backstage.appConfig value and with OCP Route enabled. | string | `"apps.example.com"` |
-| global.dynamic.includes | Array of YAML files listing dynamic plugins to include with those listed in the `plugins` field. Relative paths are resolved from the working directory of the initContainer that will install the plugins (`/opt/app-root/src`). | list | `["dynamic-plugins.default.yaml"]` |
-| global.dynamic.includes[0] | List of dynamic plugins included inside the `rhdh` container image, some of which are disabled by default. This file ONLY works with the `rhdh` container image. | string | `"dynamic-plugins.default.yaml"` |
-| global.dynamic.plugins | List of dynamic plugins, possibly overriding the plugins listed in `includes` files. Every item defines the plugin `package` as a [NPM package spec](https://docs.npmjs.com/cli/v10/using-npm/package-spec), an optional `pluginConfig` with plugin-specific backstage configuration, and an optional `enabled` flag to enable/disable a plugin listed in `includes` files. It also includes an `integrity` field that is used to verify the plugin package [integrity](https://w3c.github.io/webappsec-subresource-integrity/#integrity-metadata-description). | list | `[]` |
+| global.dynamic.includes[0] |  | string | `"/opt/app-root/src/dynamic-plugins.veecode.yaml"` |
+| global.dynamic.includes[1] |  | string | `"/devportal-data/extensions-install.yaml"` |
+| global.dynamic.plugins |  | list | `[]` |
 | global.host | Custom hostname shorthand, overrides `global.clusterRouterBase`, `upstream.ingress.host`, `route.host`, and url values in `upstream.backstage.appConfig`. | string | `""` |
 | global.lightspeed | Built-in Lightspeed feature configuration. | object | Use Lightspeed compatible settings / configurations. |
 | global.lightspeed.configMaps[0].create | Whether to create this ConfigMap from the bundled source file. Set to false and provide `nameOverride` to use a pre-existing ConfigMap. | bool | `true` |
@@ -204,6 +208,14 @@ Kubernetes: `>= 1.27.0-0`
 | global.lightspeed.secret.sourceFile | Bundled file used to populate the Secret's `stringData` keys. | string | `"secret.yaml"` |
 | global.lightspeed.sidecar.image | Full image reference for the Lightspeed Core sidecar. Override for disconnected environments. | string | `"quay.io/lightspeed-core/lightspeed-stack:0.5.3"` |
 | global.lightspeed.sidecar.resources | Resource requests/limits for the Lightspeed Core sidecar. | object | `{"limits":{"cpu":"1000m","memory":"2Gi"},"requests":{"cpu":"100m","memory":"512Mi"}}` |
+| global.veecode.branding | config chain (see extraAppConfig veecode-product), so these win. | object | `{"fullLogo":"","fullLogoWidth":180,"iconLogo":"","title":"VeeCode DevPortal"}` |
+| global.veecode.guestAuth.enabled |  | bool | `true` |
+| global.veecode.preInstallCommand |  | string | `"node regenerate-extensions-install.js --config app-config.yaml --config app-config.example.yaml --config app-config.example.production.yaml --config app-config-from-configmap.yaml"` |
+| global.veecode.support.docsUrl |  | string | `"https://github.com/veecode-platform/support/discussions"` |
+| global.veecode.support.subtitle |  | string | `"VeeCode DevPortal support"` |
+| global.veecode.support.url |  | string | `"https://github.com/veecode-platform/support/discussions"` |
+| kubernetesPlugin.rbac.enabled | Grant the chart's service account read-only access used by the Kubernetes plugin. | bool | `true` |
+| kubernetesPlugin.rbac.serviceAccountName | Optional override; empty follows the upstream chart's generated service account name. | string | `""` |
 | nameOverride |  | string | `"developer-hub"` |
 | orchestrator.enabled |  | bool | `false` |
 | orchestrator.plugins | Orchestrator plugins and their configuration | list | `[{"enabled":true,"package":"oci://registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-orchestrator-backend:{{ \"{{inherit}}\" }}"},{"enabled":true,"package":"oci://registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-orchestrator-form-widgets:{{ \"{{inherit}}\" }}"},{"enabled":true,"package":"oci://registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-orchestrator:{{ \"{{inherit}}\" }}"},{"enabled":true,"package":"oci://registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-scaffolder-backend-module-orchestrator:{{ \"{{inherit}}\" }}"}]` |
@@ -227,9 +239,10 @@ Kubernetes: `>= 1.27.0-0`
 | orchestrator.sonataflowPlatform.resources.limits.memory |  | string | `"1Gi"` |
 | orchestrator.sonataflowPlatform.resources.requests.cpu |  | string | `"250m"` |
 | orchestrator.sonataflowPlatform.resources.requests.memory |  | string | `"64Mi"` |
-| route | OpenShift Route parameters | object | `{"annotations":{},"enabled":true,"host":"{{ .Values.global.host }}","path":"/","tls":{"caCertificate":"","certificate":"","destinationCACertificate":"","enabled":true,"insecureEdgeTerminationPolicy":"Redirect","key":"","termination":"edge"},"wildcardPolicy":"None"}` |
+| permission.enabled |  | bool | `false` |
+| route | OpenShift Route parameters | object | `{"annotations":{},"enabled":false,"host":"{{ .Values.global.host }}","path":"/","tls":{"caCertificate":"","certificate":"","destinationCACertificate":"","enabled":true,"insecureEdgeTerminationPolicy":"Redirect","key":"","termination":"edge"},"wildcardPolicy":"None"}` |
 | route.annotations | Route specific annotations | object | `{}` |
-| route.enabled | Enable the creation of the route resource | bool | `true` |
+| route.enabled | Enable the creation of the route resource | bool | `false` |
 | route.host | Set the host attribute to a custom value. If not set, OpenShift will generate it, please make sure to match your baseUrl | string | `"{{ .Values.global.host }}"` |
 | route.path | Path that the router watches for, to route traffic for to the service. | string | `"/"` |
 | route.tls | Route TLS parameters <br /> Ref: https://docs.openshift.com/container-platform/4.9/networking/routes/secured-routes.html | object | `{"caCertificate":"","certificate":"","destinationCACertificate":"","enabled":true,"insecureEdgeTerminationPolicy":"Redirect","key":"","termination":"edge"}` |
@@ -241,8 +254,8 @@ Kubernetes: `>= 1.27.0-0`
 | route.tls.key | Key file contents | string | `""` |
 | route.tls.termination | Specify TLS termination. | string | `"edge"` |
 | route.wildcardPolicy | Wildcard policy if any for the route. Currently only 'Subdomain' or 'None' is allowed. | string | `"None"` |
-| test | Test pod parameters | object | `{"enabled":true,"image":{"registry":"quay.io","repository":"curl/curl","tag":"latest"},"injectTestNpmrcSecret":false}` |
-| test.enabled | Whether to enable the test-connection pod used for testing the Release using `helm test`. | bool | `true` |
+| test | Test pod parameters | object | `{"enabled":false,"image":{"registry":"quay.io","repository":"curl/curl","tag":"latest"},"injectTestNpmrcSecret":false}` |
+| test.enabled | Whether to enable the test-connection pod used for testing the Release using `helm test`. | bool | `false` |
 | test.image.registry | Test connection pod image registry | string | `"quay.io"` |
 | test.image.repository | Test connection pod image repository. Note that the image needs to have both the `sh` and `curl` binaries in it. | string | `"curl/curl"` |
 | test.image.tag | Test connection pod image tag. Note that the image needs to have both the `sh` and `curl` binaries in it. | string | `"latest"` |
