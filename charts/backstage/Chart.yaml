@@ -92,4 +92,7 @@ version: 0.1.10
 #  - Help/Support points at the VeeCode 2.x destination
 #    (github.com/veecode-platform/support/discussions), not docs.veecode.io.
 # appVersion unchanged: chart-only change; the image stays dumb.
-appVersion: 3.0.0-beta.1
+# 0.1.10 (OD1): appVersion → 3.0.0-beta.2 — image now bakes the product face
+#  (dynamic-plugins.veecode.yaml) + installer fail-closed/backstop + regen dedup;
+#  tag/digest re-pointed together with appVersion.
+appVersion: 3.0.0-beta.2

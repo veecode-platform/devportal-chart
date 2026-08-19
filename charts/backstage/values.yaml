@@ -272,9 +272,10 @@ upstream:
     image:
       registry: docker.io
       repository: veecode/devportal
-      # This is the published 3.0.0-beta.1 image; its tag/digest matches appVersion.
-      tag: 3.0.0-beta.1
-      digest: sha256:550685161568c1759061196584e168d587f79168216f8de9bf4f5190063f278a
+      # This is the published 3.0.0-beta.2 image (OD1: baked product face + installer
+      # guards + regen dedup); its tag/digest matches appVersion.
+      tag: 3.0.0-beta.2
+      digest: sha256:a20a3a7145aec337d27771a8e83c27f75ac065623116b37ba3a7a41449e8ad38
       pullPolicy: IfNotPresent
     command: []
     # FIXME (tumido): USE POSTGRES_PASSWORD and POSTGRES_USER instead of POSTGRES_ADMIN_PASSWORD
