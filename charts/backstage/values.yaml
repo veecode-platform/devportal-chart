@@ -16,7 +16,7 @@ global:
     # fail-closed at the installer level if missing (unlike the marketplace one).
     includes:
       - /opt/app-root/src/dynamic-plugins.veecode.yaml
-      - /m3data/extensions-install.yaml
+      - /devportal-data/extensions-install.yaml
     # OD1 phase A: the VeeCode product face (Home, header, TechDocs,
     # Notifications, Tech Radar, Marketplace, theme, ...) used to live here as a
     # Helm list — which meant a customer setting this same key would silently
@@ -393,8 +393,8 @@ upstream:
         mountPath: /extensions
       - name: temp
         mountPath: /tmp
-      - name: m3data
-        mountPath: /m3data
+      - name: devportal-data
+        mountPath: /devportal-data
     extraVolumes:
       # -- Ephemeral volume that will contain the dynamic plugins installed by the initContainer below at start.
       - name: dynamic-plugins-root
@@ -436,7 +436,7 @@ upstream:
         emptyDir: {}
       - name: temp
         emptyDir: {}
-      - name: m3data
+      - name: devportal-data
         emptyDir: {}
     initContainers:
       - name: install-dynamic-plugins
@@ -472,9 +472,9 @@ upstream:
           - name: CATALOG_INDEX_IMAGE
             value: quay.io/veecode/plugin-catalog-index@sha256:62da454a987e26c0d664bf4d4af27db7300b49cf499ecc6489a1531f9b08417f
           - name: CATALOG_ENTITIES_EXTRACT_DIR
-            value: /m3data/catalog-entities-extract
+            value: /devportal-data/catalog-entities-extract
           - name: DEVPORTAL_DB_PATH
-            value: /m3data
+            value: /devportal-data
           - name: POSTGRES_HOST
             valueFrom:
               secretKeyRef:
@@ -521,8 +521,8 @@ upstream:
             mountPath: /extensions
           - name: temp
             mountPath: /tmp
-          - name: m3data
-            mountPath: /m3data
+          - name: devportal-data
+            mountPath: /devportal-data
           # The operator's appConfig, so the marketplace pre-step
           # (regenerate-extensions-install.js) reads the SAME config the backend
           # does — see global.veecode.preInstallCommand, which appends this file
