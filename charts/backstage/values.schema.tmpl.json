@@ -67,9 +67,13 @@
                         },
                         "includes": {
                             "title": "List of YAML files to include, each of which should contain a `plugins` array.",
+                            "description": "MUST contain /opt/app-root/src/dynamic-plugins.veecode.yaml — the image-baked VeeCode product face (Home, header, TechDocs, Notifications, Tech Radar, Marketplace, theme). Dropping this pointer silently boots a faceless portal; this schema constraint fails the Helm render/install instead. To customize the face, add an entry to global.dynamic.plugins with the same package ref and disabled: true — do not remove the pointer.",
                             "type": "array",
                             "items": {
                                 "type": "string"
+                            },
+                            "contains": {
+                                "const": "/opt/app-root/src/dynamic-plugins.veecode.yaml"
                             },
                             "default": []
                         }

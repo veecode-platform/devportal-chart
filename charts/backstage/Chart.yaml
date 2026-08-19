@@ -43,7 +43,7 @@ sources:
 # to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
 # VeeCode owns this chart version independently from the upstream chart version recorded above.
-version: 0.1.9
+version: 0.1.10
 # 0.1.9: the marketplace pre-step sees the operator's appConfig. The init
 #  container's regenerate-extensions-install.js read only the image-baked
 #  app-configs, so `backend.database.prefix` (declared in the deployment's own

@@ -34,6 +34,8 @@ helm install my-backstage redhat-developer/backstage --version {{ template "char
 
 This chart bootstraps a [Backstage](https://backstage.io/docs/deployment/docker) deployment on a [Kubernetes](https://kubernetes.io) cluster using the [Helm](https://helm.sh) package manager.
 
+See [docs/product-face-overrides.md](../../docs/product-face-overrides.md) for how the VeeCode product face (`global.dynamic.includes[0]`) is baked into the image and how to customize or disable individual face plugins without dropping the rest.
+
 ## Prerequisites
 
 - Kubernetes 1.27+ ([OpenShift 4.14+](https://docs.redhat.com/en/documentation/openshift_container_platform/4.14/html-single/release_notes/index#ocp-4-14-about-this-release))
