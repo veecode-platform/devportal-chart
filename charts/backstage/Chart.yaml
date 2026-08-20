@@ -43,7 +43,7 @@ sources:
 # to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
 # VeeCode owns this chart version independently from the upstream chart version recorded above.
-version: 0.1.10
+version: 0.1.11
 # 0.1.9: the marketplace pre-step sees the operator's appConfig. The init
 #  container's regenerate-extensions-install.js read only the image-baked
 #  app-configs, so `backend.database.prefix` (declared in the deployment's own
@@ -92,7 +92,14 @@ version: 0.1.10
 #  - Help/Support points at the VeeCode 2.x destination
 #    (github.com/veecode-platform/support/discussions), not docs.veecode.io.
 # appVersion unchanged: chart-only change; the image stays dumb.
+# 0.1.11: appVersion → 3.0.0-beta.4 — first good image from the veecode/main
+#  product line (Backstage 1.52, per ADR-002). beta.2 was built from the wrong
+#  branch (release-1.10 = Backstage downgrade); beta.3 (main) shipped a silently
+#  partial face (5 backend dist refs lacked the -dynamic suffix; the npm
+#  installer warn+skips missing local packages). beta.4 fixes the refs and the
+#  image build now fails if any local face ref does not resolve to a real dist
+#  directory. Chart-only change beyond the image pointer.
 # 0.1.10 (OD1): appVersion → 3.0.0-beta.2 — image now bakes the product face
 #  (dynamic-plugins.veecode.yaml) + installer fail-closed/backstop + regen dedup;
 #  tag/digest re-pointed together with appVersion.
-appVersion: 3.0.0-beta.2
+appVersion: 3.0.0-beta.4
