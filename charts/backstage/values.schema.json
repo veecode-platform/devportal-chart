@@ -103,13 +103,22 @@
                     "additionalProperties": false,
                     "properties": {
                         "includes": {
-                            "contains": {
-                                "const": "/opt/app-root/src/dynamic-plugins.veecode.yaml"
-                            },
+                            "allOf": [
+                                {
+                                    "contains": {
+                                        "const": "/opt/app-root/src/dynamic-plugins.veecode.yaml"
+                                    }
+                                },
+                                {
+                                    "contains": {
+                                        "const": "dynamic-plugins.default.yaml"
+                                    }
+                                }
+                            ],
                             "default": [
                                 "dynamic-plugins.default.yaml"
                             ],
-                            "description": "MUST contain /opt/app-root/src/dynamic-plugins.veecode.yaml — the image-baked VeeCode product face (Home, header, TechDocs, Notifications, Tech Radar, Marketplace, theme). Dropping this pointer silently boots a faceless portal; this schema constraint fails the Helm render/install instead. To customize the face, add an entry to global.dynamic.plugins with the same package ref and disabled: true — do not remove the pointer.",
+                            "description": "MUST contain both /opt/app-root/src/dynamic-plugins.veecode.yaml (the image-baked VeeCode product face: Home, header, TechDocs, Notifications, Tech Radar, Marketplace, theme) and dynamic-plugins.default.yaml (the relative pointer the installer's CATALOG_INDEX_IMAGE handling swaps for the catalog-index DPDY). Dropping either pointer silently boots a faceless portal or disables catalog-index plugin discovery; this schema constraint fails the Helm render/install instead. To customize the face, add an entry to global.dynamic.plugins with the same package ref and disabled: true — do not remove either pointer.",
                             "items": {
                                 "type": "string"
                             },

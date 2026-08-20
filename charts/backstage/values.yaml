@@ -9,14 +9,22 @@ kubernetesPlugin:
     serviceAccountName: ""
 global:
   dynamic:
-    # The marketplace pre-step regenerates the second entry from Postgres before
-    # the installer runs; a missing target is a warning, never a crash (M3). The
-    # first entry is the VeeCode product face baked into the devportal-core
-    # image (OD1 phase A) — it MUST stay ahead of the marketplace entry and is
-    # fail-closed at the installer level if missing (unlike the marketplace one).
+    # Both entries are level-0 includes read by the installer's fixed-filename
+    # dynamic-plugins.yaml (level 1), which merge-dynamic-plugins.js now writes as part of
+    # preInstallCommand (see global.veecode.preInstallCommand). The marketplace write-through
+    # (DEVPORTAL_DB_PATH/extensions-install.yaml) no longer belongs here: it enters at level 1
+    # instead, merged by that script alongside the operator config — this avoids the fatal
+    # duplicate-OCI-plugin-key InstallException that would fire if the same plugin were declared
+    # both here and in the operator config at level 0.
+    # - dynamic-plugins.default.yaml is a relative include; the installer's CATALOG_INDEX_IMAGE
+    #   handling only swaps in the catalog-index DPDY when an include's basename matches this
+    #   exact filename, so the name must stay literal.
+    # - the VeeCode product face is baked into the devportal-core image (OD1 phase A) and MUST
+    #   stay listed; it is fail-closed at the installer level if missing (unlike the marketplace
+    #   entry, which was only ever a warning).
     includes:
+      - dynamic-plugins.default.yaml
       - /opt/app-root/src/dynamic-plugins.veecode.yaml
-      - /devportal-data/extensions-install.yaml
     # OD1 phase A: the VeeCode product face (Home, header, TechDocs,
     # Notifications, Tech Radar, Marketplace, theme, ...) used to live here as a
     # Helm list — which meant a customer setting this same key would silently
@@ -95,12 +103,17 @@ global:
     # on a shared Postgres reads whatever release owns that default prefix. That
     # was the v3 first-boot defect; the tenant-side /tmp/prefix-override.yaml hack
     # this replaces is now unnecessary.
+    # merge-dynamic-plugins.js runs second, after the marketplace regen has written
+    # DEVPORTAL_DB_PATH/extensions-install.yaml: it reads that file plus the operator config
+    # (DEVPORTAL_OPERATOR_CONFIG) and writes the level-1 /opt/app-root/src/dynamic-plugins.yaml
+    # the installer's fixed-filename lookup actually reads (operator plugins win on key conflict).
     preInstallCommand: >-
       node regenerate-extensions-install.js
       --config app-config.yaml
       --config app-config.example.yaml
       --config app-config.example.production.yaml
       --config app-config-from-configmap.yaml
+      && node merge-dynamic-plugins.js
   # -- Catalog index configuration for automatic plugin discovery.
   # The `install-dynamic-plugins.py` script pulls this image if the `CATALOG_INDEX_IMAGE` environment variable is set.
   # The `dynamic-plugins.default.yaml` file will be extracted and written to `dynamic-plugins-root` volume mount.
@@ -410,8 +423,10 @@ upstream:
                 requests:
                   # -- Size of the volume that will contain the dynamic plugins. It should be large enough to contain all the plugins.
                   storage: 5Gi
-      # Volume that will expose the `dynamic-plugins.yaml` file from the `dynamic-plugins` config map.
-      # The `dynamic-plugins` config map is created by the helm chart from the content of the `global.dynamic` field.
+      # Volume that will expose the operator's rendered dynamic-plugins config (from the `global.dynamic`
+      # field) as dynamic-plugins.operator.yaml. It is mounted OUTSIDE the installer's own
+      # dynamic-plugins.yaml path — see DEVPORTAL_OPERATOR_CONFIG and merge-dynamic-plugins.js below,
+      # which merge it into the level-1 file the installer actually reads.
       - name: dynamic-plugins
         configMap:
           defaultMode: 420
@@ -487,6 +502,12 @@ upstream:
             # dedup never silently falls back to the script's own default.
           - name: DEVPORTAL_FACE_FILE
             value: /opt/app-root/src/dynamic-plugins.veecode.yaml
+            # Points merge-dynamic-plugins.js at the operator-rendered config (mounted at
+            # dynamic-plugins.operator.yaml, see the `dynamic-plugins` volume above) so it can
+            # merge it with DEVPORTAL_DB_PATH/extensions-install.yaml into the level-1
+            # dynamic-plugins.yaml the installer actually reads.
+          - name: DEVPORTAL_OPERATOR_CONFIG
+            value: /opt/app-root/src/dynamic-plugins.operator.yaml
           - name: POSTGRES_HOST
             valueFrom:
               secretKeyRef:
@@ -516,7 +537,7 @@ upstream:
         volumeMounts:
           - mountPath: /dynamic-plugins-root
             name: dynamic-plugins-root
-          - mountPath: /opt/app-root/src/dynamic-plugins.yaml
+          - mountPath: /opt/app-root/src/dynamic-plugins.operator.yaml
             name: dynamic-plugins
             readOnly: true
             subPath: dynamic-plugins.yaml
