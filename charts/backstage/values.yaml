@@ -285,12 +285,12 @@ upstream:
     image:
       registry: docker.io
       repository: veecode/devportal
-      # This is the published 3.0.0-beta.4 image (first good build from the
+      # This is the published 3.0.0-beta.5 image (level-1 write-through merge + face repin/anchor; on the
       # veecode/main product line, Backstage 1.52: OD1 baked product face +
       # build-time face gate + regen dedup; beta.3's 5 broken backend dist
       # refs fixed); its tag/digest matches appVersion.
-      tag: 3.0.0-beta.4
-      digest: sha256:66e50570ee1d60929391d60756838fcb4cff1597d73c7979a8bef8dcaf0129b3
+      tag: 3.0.0-beta.5
+      digest: sha256:dd9f47c3cff87748144858c47ff7bdb7e050ba179277c1d969986297ac90d444
       pullPolicy: IfNotPresent
     command: []
     # FIXME (tumido): USE POSTGRES_PASSWORD and POSTGRES_USER instead of POSTGRES_ADMIN_PASSWORD
@@ -490,7 +490,7 @@ upstream:
             # ADR-006 decision 5: each chart release pins which bs_* index tag it
             # consumes, recorded next to the digest. This digest is index tag
             # bs_1.52.0 (98 entries, digest-pinned, face-owned images excluded) —
-            # same Backstage line as the 3.0.0-beta.4 image this chart ships.
+            # same Backstage line as the 3.0.0-beta.5 image this chart ships.
           - name: CATALOG_INDEX_IMAGE
             value: quay.io/veecode/plugin-catalog-index@sha256:0560b5a1ad60e6f953047bb456d1aa3a319f1241d79e5be16e0420dd45db022f # bs_1.52.0
           - name: CATALOG_ENTITIES_EXTRACT_DIR
