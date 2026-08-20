@@ -489,10 +489,10 @@ upstream:
             value: "40000000"
             # ADR-006 decision 5: each chart release pins which bs_* index tag it
             # consumes, recorded next to the digest. This digest is index tag
-            # bs_1.52.0 (98 entries, digest-pinned, face-owned images excluded) —
+            # bs_1.52.0 (96 entries post aws-ecs retirement, S3 bundle re-exported WITH plugin-kubernetes-common embedded — PR #191) —
             # same Backstage line as the 3.0.0-beta.5 image this chart ships.
           - name: CATALOG_INDEX_IMAGE
-            value: quay.io/veecode/plugin-catalog-index@sha256:0560b5a1ad60e6f953047bb456d1aa3a319f1241d79e5be16e0420dd45db022f # bs_1.52.0
+            value: quay.io/veecode/plugin-catalog-index@sha256:91005be9b3cf16a90b42586eb361c8923284e3c71e8a236bd4a623d524f859fb # bs_1.52.0
           - name: CATALOG_ENTITIES_EXTRACT_DIR
             value: /devportal-data/catalog-entities-extract
           - name: DEVPORTAL_DB_PATH
