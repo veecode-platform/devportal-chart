@@ -272,10 +272,12 @@ upstream:
     image:
       registry: docker.io
       repository: veecode/devportal
-      # This is the published 3.0.0-beta.2 image (OD1: baked product face + installer
-      # guards + regen dedup); its tag/digest matches appVersion.
-      tag: 3.0.0-beta.2
-      digest: sha256:a20a3a7145aec337d27771a8e83c27f75ac065623116b37ba3a7a41449e8ad38
+      # This is the published 3.0.0-beta.4 image (first good build from the
+      # veecode/main product line, Backstage 1.52: OD1 baked product face +
+      # build-time face gate + regen dedup; beta.3's 5 broken backend dist
+      # refs fixed); its tag/digest matches appVersion.
+      tag: 3.0.0-beta.4
+      digest: sha256:66e50570ee1d60929391d60756838fcb4cff1597d73c7979a8bef8dcaf0129b3
       pullPolicy: IfNotPresent
     command: []
     # FIXME (tumido): USE POSTGRES_PASSWORD and POSTGRES_USER instead of POSTGRES_ADMIN_PASSWORD
