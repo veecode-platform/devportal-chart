@@ -492,7 +492,7 @@ upstream:
             # bs_1.52.0 (96 entries post aws-ecs retirement, S3 bundle re-exported WITH plugin-kubernetes-common embedded — PR #191) —
             # same Backstage line as the 3.0.0-beta.5 image this chart ships.
           - name: CATALOG_INDEX_IMAGE
-            value: quay.io/veecode/plugin-catalog-index@sha256:76ceae85b7865b37e804eabd5dd7d6be7becee99c35cb11dbe63107ac1bcbfa9 # bs_1.52.0
+            value: quay.io/veecode/plugin-catalog-index@sha256:1220a379f6cb4c8393f0c278ec76c3eb7ffbebd3db4057fccfa9e4e5512dfaa1 # bs_1.52.0
           - name: CATALOG_ENTITIES_EXTRACT_DIR
             value: /devportal-data/catalog-entities-extract
           - name: DEVPORTAL_DB_PATH
