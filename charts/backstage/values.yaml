@@ -289,8 +289,8 @@ upstream:
       # veecode/main product line, Backstage 1.52: OD1 baked product face +
       # build-time face gate + regen dedup; beta.3's 5 broken backend dist
       # refs fixed); its tag/digest matches appVersion.
-      tag: 3.0.0-beta.6
-      digest: sha256:6e03f18e8fef1429ca2fa886b00629508acd5c5d76e9874ef005ce7d2aac9d1d
+      tag: 3.0.0-beta.7
+      digest: sha256:c443520aebf72df6978b00657a31f8e7af0924096dd53d73cf46d1db98405946
       pullPolicy: IfNotPresent
     command: []
     # FIXME (tumido): USE POSTGRES_PASSWORD and POSTGRES_USER instead of POSTGRES_ADMIN_PASSWORD
@@ -492,7 +492,7 @@ upstream:
             # bs_1.52.0 (96 entries post aws-ecs retirement, S3 bundle re-exported WITH plugin-kubernetes-common embedded — PR #191) —
             # same Backstage line as the 3.0.0-beta.5 image this chart ships.
           - name: CATALOG_INDEX_IMAGE
-            value: quay.io/veecode/plugin-catalog-index@sha256:bbdbb115d337772a766eb544eeee02f306655f2bd5c66c2bb87c043c60b2d322 # bs_1.52.0
+            value: quay.io/veecode/plugin-catalog-index@sha256:09a13f5667e84e40447c036be2b46b85c93747be2740e3fbf86d02423f241fac # bs_1.52.0
           - name: CATALOG_ENTITIES_EXTRACT_DIR
             value: /devportal-data/catalog-entities-extract
           - name: DEVPORTAL_DB_PATH
