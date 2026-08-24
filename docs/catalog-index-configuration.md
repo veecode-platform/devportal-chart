@@ -13,6 +13,21 @@ global:
       tag: "1.9"
 ```
 
+### VeeCode default: consumption by moving tag
+
+The VeeCode distribution defaults `global.catalogIndex.image` to `quay.io/veecode/plugin-catalog-index:bs_1.52.0` — a mutable tag that the registry re-points as the index is rebuilt for that Backstage line. The chart is the only place this reference lives; per-tenant `CATALOG_INDEX_IMAGE` overrides are not needed.
+
+The registry also publishes immutable, timestamped tags in the form `bs_<backstage-version>_<timestamp>` (e.g. `bs_1.52.0_20260824T133841`) alongside the moving one. If an incident requires pinning to a known-good index build, set `global.catalogIndex.image.tag` to one of those timestamped tags instead of `bs_1.52.0`, then roll forward to the moving tag once resolved:
+
+```yaml
+global:
+  catalogIndex:
+    image:
+      registry: quay.io
+      repository: veecode/plugin-catalog-index
+      tag: "bs_1.52.0_20260824T133841" # temporary pin, roll back to "bs_1.52.0" after
+```
+
 ## Extra catalog index images
 
 You can configure additional catalog index images alongside the primary one using `global.catalogIndex.extraImages`. Each extra image contributes catalog entities only to the Extensions UI — only the primary `CATALOG_INDEX_IMAGE` is used for extracting and handling the `dynamic-plugins.default.yaml`.

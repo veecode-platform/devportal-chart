@@ -1,7 +1,7 @@
 
 # RHDH Backstage Helm Chart for OpenShift
 
-![Version: 0.1.20](https://img.shields.io/badge/Version-0.1.20-informational?style=flat-square)
+![Version: 0.1.21](https://img.shields.io/badge/Version-0.1.21-informational?style=flat-square)
 ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
 
 A Helm chart for deploying VeeCode DevPortal, a VeeCode distribution of Backstage.
@@ -172,7 +172,7 @@ Kubernetes: `>= 1.27.0-0`
 | global.auth.backend.enabled | Enable backend service to service authentication, unless configured otherwise it generates a secret value | bool | `false` |
 | global.auth.backend.existingSecret | Instead of generating a secret value, refer to existing secret | string | `""` |
 | global.auth.backend.value | Instead of generating a secret value, use the following value | string | `""` |
-| global.catalogIndex | Catalog index configuration for automatic plugin discovery. The `install-dynamic-plugins.py` script pulls this image if the `CATALOG_INDEX_IMAGE` environment variable is set. The `dynamic-plugins.default.yaml` file will be extracted and written to `dynamic-plugins-root` volume mount. | object | `{"extraImages":[],"image":{"registry":"quay.io","repository":"rhdh/plugin-catalog-index","tag":"next"}}` |
+| global.catalogIndex | Catalog index configuration for automatic plugin discovery. The `install-dynamic-plugins.py` script pulls this image if the `CATALOG_INDEX_IMAGE` environment variable is set. The `dynamic-plugins.default.yaml` file will be extracted and written to `dynamic-plugins-root` volume mount. | object | `{"extraImages":[],"image":{"registry":"quay.io","repository":"veecode/plugin-catalog-index","tag":"bs_1.52.0"}}` |
 | global.catalogIndex.extraImages | Extra catalog index images for additional plugin discovery in the Extensions UI. Each item must include `registry`, `repository`, and `tag` fields; `name` is optional. Only catalog entities are extracted from extra images (no `dynamic-plugins.default.yaml` handling). | list | `[]` |
 | global.clusterRouterBase | Shorthand for users who do not want to specify a custom HOSTNAME. Used ONLY with the DEFAULT upstream.backstage.appConfig value and with OCP Route enabled. | string | `"apps.example.com"` |
 | global.dynamic.includes[0] |  | string | `"/opt/app-root/src/dynamic-plugins.veecode.yaml"` |
