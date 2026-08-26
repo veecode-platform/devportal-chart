@@ -286,7 +286,7 @@ upstream:
       registry: docker.io
       repository: veecode/devportal
       # This is the published 3.0.0-beta.6 image (merge writes to the data volume via baked symlink — EROFS fix; level-1 seam + face repin/anchor; on the
-      # veecode/main product line, Backstage 1.52: OD1 baked product face +
+      # main (formerly veecode/main) product line, Backstage 1.52: OD1 baked product face +
       # build-time face gate + regen dedup; beta.3's 5 broken backend dist
       # refs fixed); its tag/digest matches appVersion.
       tag: 3.0.0-beta.7
