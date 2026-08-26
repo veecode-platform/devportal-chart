@@ -14,7 +14,7 @@ annotations and must not be encoded by reusing the upstream version.
 
 ## Branch and ownership rules
 
-- veecode/main is the product branch for this fork.
+- `main` is the product branch for this fork (renamed from `veecode/main` on 2026-08-26; the former upstream mirror `main` is now `upstream/main`).
 - Upstream lineage is the pinned RHDH tag and commit above. A resync must
   explicitly choose and record a new upstream tag/commit.
 - Feature work stays in pull requests. The working tree may be inspected with

@@ -4,7 +4,7 @@ metadata:
   name: devportal-chart
   description: >-
     Helm chart for the VeeCode DevPortal — fork of the RHDH chart (manual
-    resync line veecode/main). Pins the devportal-core image by tag+digest,
+    resync line `main`, formerly veecode/main). Pins the devportal-core image by tag+digest,
     consumes per-plugin OCI images and the plugin-catalog-index from
     quay.io/veecode (ADR-008), and publishes released charts into the
     next-charts index.
