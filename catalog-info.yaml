@@ -1,0 +1,26 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: devportal-chart
+  description: >-
+    Helm chart for the VeeCode DevPortal — fork of the RHDH chart (manual
+    resync line veecode/main). Pins the devportal-core image by tag+digest,
+    consumes per-plugin OCI images and the plugin-catalog-index from
+    quay.io/veecode (ADR-008), and publishes released charts into the
+    next-charts index.
+  annotations:
+    github.com/project-slug: veecode-platform/devportal-chart
+  tags: [fork, helm]
+  links:
+    - url: https://github.com/redhat-developer/rhdh-chart
+      title: "Upstream: redhat-developer/rhdh-chart (manual resync)"
+spec:
+  type: helm-chart
+  lifecycle: production
+  owner: group:default/veecode-platform
+  system: veecode-devportal
+  dependsOn:
+    - component:default/rhdh-chart
+    - component:default/devportal-core
+    - resource:default/quay-veecode
+    - component:default/next-charts
