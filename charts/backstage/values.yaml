@@ -289,7 +289,7 @@ upstream:
       # main (formerly veecode/main) product line, Backstage 1.52: OD1 baked product face +
       # build-time face gate + regen dedup; beta.3's 5 broken backend dist
       # refs fixed); its tag/digest matches appVersion.
-      tag: 3.0.0-beta.7
+      tag: 3.0.0-beta.8
       digest: sha256:c443520aebf72df6978b00657a31f8e7af0924096dd53d73cf46d1db98405946
       pullPolicy: IfNotPresent
     command: []
