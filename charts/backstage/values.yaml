@@ -285,12 +285,14 @@ upstream:
     image:
       registry: docker.io
       repository: veecode/devportal
-      # This is the published 3.0.0-beta.6 image (merge writes to the data volume via baked symlink — EROFS fix; level-1 seam + face repin/anchor; on the
-      # main (formerly veecode/main) product line, Backstage 1.52: OD1 baked product face +
-      # build-time face gate + regen dedup; beta.3's 5 broken backend dist
-      # refs fixed); its tag/digest matches appVersion.
+      # This is the published 3.0.0-beta.8 image (adds the inert-by-default
+      # GitLab webhook events module; beta.6 fixed the EROFS merge path, beta.5
+      # the level-1 seam + face repin/anchor; main product line, Backstage 1.52,
+      # OD1 baked product face + build-time face gate + regen dedup). The digest
+      # WINS over the tag — bump both together. It is the multi-arch manifest
+      # list digest (amd64 + arm64), not a single-arch image digest.
       tag: 3.0.0-beta.8
-      digest: sha256:c443520aebf72df6978b00657a31f8e7af0924096dd53d73cf46d1db98405946
+      digest: sha256:a72cf5cb47b87e5c5d62531b7ce554ee05ff7d09c23e74c5aee70c7a248d0941
       pullPolicy: IfNotPresent
     command: []
     # FIXME (tumido): USE POSTGRES_PASSWORD and POSTGRES_USER instead of POSTGRES_ADMIN_PASSWORD
