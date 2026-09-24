@@ -285,14 +285,15 @@ upstream:
     image:
       registry: docker.io
       repository: veecode/devportal
-      # This is the published 3.0.0-beta.8 image (adds the inert-by-default
-      # GitLab webhook events module; beta.6 fixed the EROFS merge path, beta.5
-      # the level-1 seam + face repin/anchor; main product line, Backstage 1.52,
-      # OD1 baked product face + build-time face gate + regen dedup). The digest
-      # WINS over the tag — bump both together. It is the multi-arch manifest
-      # list digest (amd64 + arm64), not a single-arch image digest.
-      tag: 3.0.0-beta.8
-      digest: sha256:a72cf5cb47b87e5c5d62531b7ce554ee05ff7d09c23e74c5aee70c7a248d0941
+      # This is the published 3.0.0-beta.9 image. Against beta.8 only the baked
+      # product face changes: about and about-backend install from their OCI
+      # artifacts (1.2.1) instead of npm (1.1.0), and veecode-homepage moves to
+      # its 1.0.3 artifact released from devportal-plugins main. Main product
+      # line, Backstage 1.52. The digest WINS over the tag — bump both together.
+      # It is the multi-arch manifest list digest (amd64 + arm64), not a
+      # single-arch image digest.
+      tag: 3.0.0-beta.9
+      digest: sha256:7a3d61de5e5e8f07c5f612e8235b2dc8d46e97418e4e4d1bf40ca2c500157347
       pullPolicy: IfNotPresent
     command: []
     # FIXME (tumido): USE POSTGRES_PASSWORD and POSTGRES_USER instead of POSTGRES_ADMIN_PASSWORD
