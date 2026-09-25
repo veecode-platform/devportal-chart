@@ -21,4 +21,4 @@ The fork retains the upstream RHDH chart lineage and Apache-2.0 licensing; see [
 
 ## Drift manifest
 
-The pinned upstream baseline, VeeCode-owned seams, and resync rules are documented in [AGENTS.md](AGENTS.md).
+The pinned upstream baseline, VeeCode-owned seams, and resync rules are documented in [docs/upstream-drift.md](docs/upstream-drift.md).
