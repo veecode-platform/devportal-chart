@@ -25,6 +25,13 @@ global:
 orchestrator:
   enabled: true
   plugins: []
+  # CI: the devportal chart runs without the bundled PostgreSQL, so point
+  # SonataFlow at the database the test action creates.
+  sonataflowPlatform:
+    externalDBsecretRef: orchestrator-ci-db
+    externalDBName: devportal
+    externalDBHost: pg.devportal-ci.svc
+    externalDBPort: "5432"
 
 test:
   injectTestNpmrcSecret: true

@@ -209,6 +209,11 @@ runs:
           --from-literal=PG_PASSWORD=ci-only \
           --from-literal=PG_DATABASE=devportal \
           --from-literal=BACKEND_SECRET="$(openssl rand -hex 16)"
+        kubectl -n devportal-ci create secret generic orchestrator-ci-db \
+          --from-literal=POSTGRES_HOST=pg.devportal-ci.svc \
+          --from-literal=POSTGRES_PORT=5432 \
+          --from-literal=POSTGRES_USER=devportal \
+          --from-literal=POSTGRES_PASSWORD=ci-only
 
     - name: Run chart-testing (install)
       if: steps.list-changed.outputs.changed == 'true'
