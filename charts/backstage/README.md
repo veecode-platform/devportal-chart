@@ -1,7 +1,7 @@
 
 # RHDH Backstage Helm Chart for OpenShift
 
-![Version: 0.1.24](https://img.shields.io/badge/Version-0.1.24-informational?style=flat-square)
+![Version: 0.1.25](https://img.shields.io/badge/Version-0.1.25-informational?style=flat-square)
 ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
 
 A Helm chart for deploying VeeCode DevPortal, a VeeCode distribution of Backstage.
@@ -31,7 +31,7 @@ For the **Generally Available** version of this chart, see:
 helm repo add bitnami https://charts.bitnami.com/bitnami
 helm repo add redhat-developer https://redhat-developer.github.io/rhdh-chart
 
-helm install my-backstage redhat-developer/backstage --version 0.1.20
+helm install my-backstage redhat-developer/backstage --version 0.1.25
 ```
 
 ## Introduction
@@ -175,8 +175,8 @@ Kubernetes: `>= 1.27.0-0`
 | global.catalogIndex | Catalog index configuration for automatic plugin discovery. The `install-dynamic-plugins.py` script pulls this image if the `CATALOG_INDEX_IMAGE` environment variable is set. The `dynamic-plugins.default.yaml` file will be extracted and written to `dynamic-plugins-root` volume mount. | object | `{"extraImages":[],"image":{"registry":"quay.io","repository":"veecode/plugin-catalog-index","tag":"bs_1.52.0"}}` |
 | global.catalogIndex.extraImages | Extra catalog index images for additional plugin discovery in the Extensions UI. Each item must include `registry`, `repository`, and `tag` fields; `name` is optional. Only catalog entities are extracted from extra images (no `dynamic-plugins.default.yaml` handling). | list | `[]` |
 | global.clusterRouterBase | Shorthand for users who do not want to specify a custom HOSTNAME. Used ONLY with the DEFAULT upstream.backstage.appConfig value and with OCP Route enabled. | string | `"apps.example.com"` |
-| global.dynamic.includes[0] |  | string | `"/opt/app-root/src/dynamic-plugins.veecode.yaml"` |
-| global.dynamic.includes[1] |  | string | `"/devportal-data/extensions-install.yaml"` |
+| global.dynamic.includes[0] |  | string | `"dynamic-plugins.default.yaml"` |
+| global.dynamic.includes[1] |  | string | `"/opt/app-root/src/dynamic-plugins.veecode.yaml"` |
 | global.dynamic.plugins |  | list | `[]` |
 | global.host | Custom hostname shorthand, overrides `global.clusterRouterBase`, `upstream.ingress.host`, `route.host`, and url values in `upstream.backstage.appConfig`. | string | `""` |
 | global.lightspeed | Built-in Lightspeed feature configuration. | object | Use Lightspeed compatible settings / configurations. |
@@ -210,7 +210,7 @@ Kubernetes: `>= 1.27.0-0`
 | global.lightspeed.sidecar.resources | Resource requests/limits for the Lightspeed Core sidecar. | object | `{"limits":{"cpu":"1000m","memory":"2Gi"},"requests":{"cpu":"100m","memory":"512Mi"}}` |
 | global.veecode.branding | config chain (see extraAppConfig veecode-product), so these win. | object | `{"fullLogo":"","fullLogoWidth":180,"iconLogo":"","title":"VeeCode DevPortal"}` |
 | global.veecode.guestAuth.enabled |  | bool | `true` |
-| global.veecode.preInstallCommand |  | string | `"node regenerate-extensions-install.js --config app-config.yaml --config app-config.example.yaml --config app-config.example.production.yaml --config app-config-from-configmap.yaml"` |
+| global.veecode.preInstallCommand |  | string | `"node regenerate-extensions-install.js --config app-config.yaml --config app-config.example.yaml --config app-config.example.production.yaml --config app-config-from-configmap.yaml && node merge-dynamic-plugins.js"` |
 | global.veecode.support.docsUrl |  | string | `"https://github.com/veecode-platform/support/discussions"` |
 | global.veecode.support.subtitle |  | string | `"VeeCode DevPortal support"` |
 | global.veecode.support.url |  | string | `"https://github.com/veecode-platform/support/discussions"` |

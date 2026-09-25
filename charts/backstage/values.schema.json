@@ -10,7 +10,7 @@
                             "additionalProperties": false,
                             "properties": {
                                 "enabled": {
-                                    "default": true,
+                                    "default": false,
                                     "title": "Enable backend service to service authentication, unless configured otherwise it generates a secret value",
                                     "type": "boolean"
                                 },
@@ -77,12 +77,12 @@
                                     "type": "string"
                                 },
                                 "repository": {
-                                    "default": "rhdh/plugin-catalog-index",
+                                    "default": "veecode/plugin-catalog-index",
                                     "title": "Catalog index image repository",
                                     "type": "string"
                                 },
                                 "tag": {
-                                    "default": "next",
+                                    "default": "bs_1.52.0",
                                     "title": "Catalog index image tag",
                                     "type": "string"
                                 }
@@ -116,9 +116,10 @@
                                 }
                             ],
                             "default": [
-                                "dynamic-plugins.default.yaml"
+                                "dynamic-plugins.default.yaml",
+                                "/opt/app-root/src/dynamic-plugins.veecode.yaml"
                             ],
-                            "description": "MUST contain both /opt/app-root/src/dynamic-plugins.veecode.yaml (the image-baked VeeCode product face: Home, header, TechDocs, Notifications, Tech Radar, Marketplace, theme) and dynamic-plugins.default.yaml (the relative pointer the installer's CATALOG_INDEX_IMAGE handling swaps for the catalog-index DPDY). Dropping either pointer silently boots a faceless portal or disables catalog-index plugin discovery; this schema constraint fails the Helm render/install instead. To customize the face, add an entry to global.dynamic.plugins with the same package ref and disabled: true — do not remove either pointer.",
+                            "description": "MUST contain both /opt/app-root/src/dynamic-plugins.veecode.yaml (the image-baked VeeCode product face: Home, header, TechDocs, Notifications, Tech Radar, Marketplace, theme) and dynamic-plugins.default.yaml (the relative pointer the installer's CATALOG_INDEX_IMAGE handling swaps for the catalog-index DPDY). Dropping either pointer silently boots a faceless portal or disables catalog-index plugin discovery; this schema constraint fails the Helm render/install instead. To customize the face, add an entry to global.dynamic.plugins with the same package ref and disabled: true \u2014 do not remove either pointer.",
                             "items": {
                                 "type": "string"
                             },
@@ -632,7 +633,7 @@
                     "type": "object"
                 },
                 "enabled": {
-                    "default": true,
+                    "default": false,
                     "title": "Enable the creation of the route resource.",
                     "type": "boolean"
                 },
@@ -718,7 +719,7 @@
             "additionalProperties": false,
             "properties": {
                 "enabled": {
-                    "default": true,
+                    "default": false,
                     "title": "Enable test configuration. If enabled, test resources will be created to verify the Helm Release has been successfully deployed using the `helm test` command.",
                     "type": "boolean"
                 },
@@ -1545,9 +1546,13 @@
                                         "origin": "https://{{- include \"rhdh.hostname\" . }}"
                                     },
                                     "database": {
+                                        "client": "pg",
                                         "connection": {
-                                            "password": "${POSTGRESQL_ADMIN_PASSWORD}",
-                                            "user": "postgres"
+                                            "database": "${PG_DATABASE}",
+                                            "host": "${PG_HOST}",
+                                            "password": "${PG_PASSWORD}",
+                                            "port": "${PG_PORT}",
+                                            "user": "${PG_USER}"
                                         }
                                     }
                                 }
@@ -1779,7 +1784,24 @@
                             "type": "object"
                         },
                         "extraAppConfig": {
-                            "default": [],
+                            "default": [
+                                {
+                                    "configMapRef": "veecode-auth",
+                                    "filename": "app-config.veecode-auth.yaml"
+                                },
+                                {
+                                    "configMapRef": "veecode-branding",
+                                    "filename": "app-config.veecode-branding.yaml"
+                                },
+                                {
+                                    "configMapRef": "veecode-extensions-config",
+                                    "filename": "app-config.extensions.yaml"
+                                },
+                                {
+                                    "configMapRef": "veecode-product",
+                                    "filename": "app-config.veecode-product.yaml"
+                                }
+                            ],
                             "items": {
                                 "additionalProperties": false,
                                 "properties": {
@@ -3024,26 +3046,7 @@
                             "type": "array"
                         },
                         "extraEnvVars": {
-                            "default": [
-                                {
-                                    "name": "BACKEND_SECRET",
-                                    "valueFrom": {
-                                        "secretKeyRef": {
-                                            "key": "backend-secret",
-                                            "name": "{{ include \"rhdh.backend-secret-name\" $ }}"
-                                        }
-                                    }
-                                },
-                                {
-                                    "name": "POSTGRESQL_ADMIN_PASSWORD",
-                                    "valueFrom": {
-                                        "secretKeyRef": {
-                                            "key": "{{- include \"rhdh.postgresql.adminPasswordKey\" . }}",
-                                            "name": "{{- include \"rhdh.postgresql.secretName\" . }}"
-                                        }
-                                    }
-                                }
-                            ],
+                            "default": [],
                             "examples": [
                                 [
                                     {
@@ -3183,7 +3186,9 @@
                             "type": "array"
                         },
                         "extraEnvVarsSecrets": {
-                            "default": [],
+                            "default": [
+                                "veecode-runtime-secrets"
+                            ],
                             "description": "Translates into array of `envFrom.[].secretRef.name`",
                             "examples": [
                                 [
@@ -3243,6 +3248,10 @@
                                 {
                                     "mountPath": "/tmp",
                                     "name": "temp"
+                                },
+                                {
+                                    "mountPath": "/devportal-data",
+                                    "name": "devportal-data"
                                 }
                             ],
                             "items": {
@@ -3340,6 +3349,10 @@
                                 {
                                     "emptyDir": {},
                                     "name": "temp"
+                                },
+                                {
+                                    "emptyDir": {},
+                                    "name": "devportal-data"
                                 }
                             ],
                             "items": {
@@ -4901,13 +4914,13 @@
                             "additionalProperties": false,
                             "properties": {
                                 "digest": {
-                                    "default": "",
+                                    "default": "sha256:7a3d61de5e5e8f07c5f612e8235b2dc8d46e97418e4e4d1bf40ca2c500157347",
                                     "description": "digest takes precedence over image tag",
                                     "title": "Backstage image digest",
                                     "type": "string"
                                 },
                                 "pullPolicy": {
-                                    "default": "",
+                                    "default": "IfNotPresent",
                                     "description": "Ref: https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy",
                                     "enum": [
                                         "Always",
@@ -4931,7 +4944,7 @@
                                     "type": "array"
                                 },
                                 "registry": {
-                                    "default": "quay.io",
+                                    "default": "docker.io",
                                     "examples": [
                                         "ghcr.io",
                                         "quay.io",
@@ -4941,12 +4954,12 @@
                                     "type": "string"
                                 },
                                 "repository": {
-                                    "default": "rhdh-community/rhdh",
+                                    "default": "veecode/devportal",
                                     "title": "Backstage image repository",
                                     "type": "string"
                                 },
                                 "tag": {
-                                    "default": "next",
+                                    "default": "3.0.0-beta.9",
                                     "description": "Immutable tags are recommended.",
                                     "title": "Backstage image tag",
                                     "type": "string"
@@ -4977,7 +4990,64 @@
                                         },
                                         {
                                             "name": "CATALOG_ENTITIES_EXTRACT_DIR",
-                                            "value": "/extensions"
+                                            "value": "/devportal-data/catalog-entities-extract"
+                                        },
+                                        {
+                                            "name": "DEVPORTAL_DB_PATH",
+                                            "value": "/devportal-data"
+                                        },
+                                        {
+                                            "name": "DEVPORTAL_FACE_FILE",
+                                            "value": "/opt/app-root/src/dynamic-plugins.veecode.yaml"
+                                        },
+                                        {
+                                            "name": "DEVPORTAL_OPERATOR_CONFIG",
+                                            "value": "/opt/app-root/src/dynamic-plugins.operator.yaml"
+                                        },
+                                        {
+                                            "name": "POSTGRES_HOST",
+                                            "valueFrom": {
+                                                "secretKeyRef": {
+                                                    "key": "PG_HOST",
+                                                    "name": "{{ first .Values.backstage.extraEnvVarsSecrets }}"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "name": "POSTGRES_PORT",
+                                            "valueFrom": {
+                                                "secretKeyRef": {
+                                                    "key": "PG_PORT",
+                                                    "name": "{{ first .Values.backstage.extraEnvVarsSecrets }}"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "name": "POSTGRES_USER",
+                                            "valueFrom": {
+                                                "secretKeyRef": {
+                                                    "key": "PG_USER",
+                                                    "name": "{{ first .Values.backstage.extraEnvVarsSecrets }}"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "name": "POSTGRES_PASSWORD",
+                                            "valueFrom": {
+                                                "secretKeyRef": {
+                                                    "key": "PG_PASSWORD",
+                                                    "name": "{{ first .Values.backstage.extraEnvVarsSecrets }}"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "name": "POSTGRES_DATABASE",
+                                            "valueFrom": {
+                                                "secretKeyRef": {
+                                                    "key": "PG_DATABASE",
+                                                    "name": "{{ first .Values.backstage.extraEnvVarsSecrets }}"
+                                                }
+                                            }
                                         }
                                     ],
                                     "image": "{{ include \"backstage.image\" . }}",
@@ -5013,7 +5083,7 @@
                                             "name": "dynamic-plugins-root"
                                         },
                                         {
-                                            "mountPath": "/opt/app-root/src/dynamic-plugins.yaml",
+                                            "mountPath": "/opt/app-root/src/dynamic-plugins.operator.yaml",
                                             "name": "dynamic-plugins",
                                             "readOnly": true,
                                             "subPath": "dynamic-plugins.yaml"
@@ -5040,6 +5110,16 @@
                                         {
                                             "mountPath": "/tmp",
                                             "name": "temp"
+                                        },
+                                        {
+                                            "mountPath": "/devportal-data",
+                                            "name": "devportal-data"
+                                        },
+                                        {
+                                            "mountPath": "/opt/app-root/src/app-config-from-configmap.yaml",
+                                            "name": "backstage-app-config",
+                                            "readOnly": true,
+                                            "subPath": "app-config.yaml"
                                         }
                                     ],
                                     "workingDir": "/opt/app-root/src"
@@ -8386,7 +8466,7 @@
                             "type": "boolean"
                         },
                         "create": {
-                            "default": false,
+                            "default": true,
                             "title": "Enable the creation of a ServiceAccount for Backstage pods",
                             "type": "boolean"
                         },
