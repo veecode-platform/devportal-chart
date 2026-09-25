@@ -345,33 +345,65 @@ upstream:
       enabled: true
 ```
 
-## Installing RHDH with Orchestrator on OpenShift
+## Install VeeCode DevPortal with Orchestrator on OpenShift
 
-Orchestrator brings serverless workflows into Backstage, focusing on the journey for application migration to the cloud, onboarding developers, and user-made workflows of Backstage actions or external systems.
-Orchestrator is a flavor of RHDH, and can be installed alongside RHDH in the same namespace and in the following way:
+Orchestrator adds serverless workflows to Backstage. It supports application migration, developer onboarding, and workflows that use Backstage actions or external systems.
 
-1. Have an admin install the [orchestrator-infra Helm Chart](https://github.com/redhat-developer/rhdh-chart/tree/main/charts/orchestrator-infra#readme), which will install the prerequisites required to deploy the Orchestrator-flavored RHDH. This process will include installing cluster-wide resources, so should be done with admin privileges:
-```
-helm repo add bitnami https://charts.bitnami.com/bitnami
+The `orchestrator-infra` chart installs cluster-wide prerequisites. VeeCode does not publish this chart in [next-charts](https://veecode-platform.github.io/next-charts). Install it from the [Red Hat Developer Hub chart repository](https://github.com/redhat-developer/rhdh-chart/tree/main/charts/orchestrator-infra#readme) with cluster-admin access:
+
+```console
 helm repo add redhat-developer https://redhat-developer.github.io/rhdh-chart
+helm repo update
+helm install devportal-orchestrator-infra redhat-developer/redhat-developer-hub-orchestrator-infra
+```
 
-helm install <release_name> redhat-developer/redhat-developer-hub-orchestrator-infra
-```
-2. Manually approve the Install Plans created by the chart, and wait for the Openshift Serverless and Openshift Serverless Logic Operators to be deployed. To do so, follow the post-install notes given by the chart, or see them [here](https://github.com/redhat-developer/rhdh-chart/blob/main/charts/orchestrator-infra/templates/NOTES.txt)
-3. Install the `backstage` chart with Helm, enabling orchestrator, like so:
+Approve the Install Plans created by the chart. Wait for the OpenShift Serverless and OpenShift Serverless Logic Operators to become available. Follow the chart's [post-install notes](https://github.com/redhat-developer/rhdh-chart/blob/main/charts/orchestrator-infra/templates/NOTES.txt).
 
+### Configure the external database
+
+The DevPortal chart disables bundled PostgreSQL by default. Orchestrator requires an external PostgreSQL database. The chart creates a separate `sonataflow` database for workflow data, so the database user must be able to create databases.
+
+Create the `devportal` namespace and a Secret with the keys `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_USER`, and `POSTGRES_PASSWORD`. Replace the sample host, user, and password with values for your external database:
+
+```console
+kubectl create namespace devportal --dry-run=client -o yaml | kubectl apply -f -
+kubectl -n devportal create secret generic orchestrator-db-credentials \
+  --from-literal=POSTGRES_HOST=postgres.example.svc \
+  --from-literal=POSTGRES_PORT=5432 \
+  --from-literal=POSTGRES_USER=postgres \
+  --from-literal=POSTGRES_PASSWORD=replace-me \
+  --dry-run=client -o yaml | kubectl apply -f -
 ```
-helm install <release_name> redhat-developer/backstage --set orchestrator.enabled=true
+
+Set `externalDBName` to an existing database that the Secret's user can access. The host and port in the values file must match the Secret.
+
+Save this configuration as `orchestrator-values.yaml`. Replace the sample database name, host, and Secret name with your values:
+
+```yaml
+orchestrator:
+  enabled: true
+  sonataflowPlatform:
+    externalDBsecretRef: orchestrator-db-credentials
+    externalDBName: appdb
+    externalDBHost: postgres.example.svc
+    externalDBPort: "5432"
 ```
-Note that serverlessLogicOperator, and serverlessOperator are enabled by default. They can be disabled together or seperately by passing the following flags:
-`--set orchestrator.serverlessLogicOperator.enabled=false --set orchestrator.serverlessOperator.enabled=false`
+
+Install VeeCode DevPortal with this configuration:
+
+```console
+helm repo add veecode https://veecode-platform.github.io/next-charts
+helm repo update
+helm install devportal veecode/devportal --namespace devportal -f orchestrator-values.yaml
+```
+
+The chart enables the Serverless and Serverless Logic Operators by default. If either operator is already installed in the cluster, disable its installation with `--set orchestrator.serverlessOperator.enabled=false` or `--set orchestrator.serverlessLogicOperator.enabled=false`.
 
 ### Enablement of Notifications Plugin
 
 Workflows running with Orchestrator may use the Notifications plugin.
 For this, you must enable the Notifications and Signals plugins.
-To do so, you would need to edit the [default Helm values.yaml](https://github.com/redhat-developer/rhdh-chart/blob/main/charts/backstage/values.yaml) file, and add the plugins listed below to the global.dynamic.plugins list.
-Do this before installing the Helm Chart, or upgrade the Helm release with the new values file.
+Add the plugins below to `global.dynamic.plugins` in [values.yaml](values.yaml) before installing the chart, or upgrade the Helm release with the updated values file.
 
 ```yaml
 - enabled: true
@@ -383,29 +415,4 @@ Do this before installing the Helm Chart, or upgrade the Helm release with the n
 - enabled: true
   package: "./dynamic-plugins/dist/backstage-plugin-signals-backend-dynamic"
 ```
-Enabling these plugins will allow you to recieve notifications from workflows running with Orchestrator.
-
-### Using Orchestrator while configuring an ExternalDB
-
-To use orchestrator with an external DB, please follow the instructions in [our documentation](https://github.com/redhat-developer/rhdh-chart/blob/main/docs/external-db.md)
-and populate the following values in the values.yaml:
-```bash
-    externalDBsecretRef: <cred-secret>
-    externalDBName: ""
-    externalDBHost: ""
-    externalDBPort: ""
-```
-The values for externalDBHost and externalDBPort should match the ones configured in the cred-secret.
-
-Please note that `externalDBName` is the name of the user-configured existing database, not the database that the orchestrator and sonataflow resources will use.
-A Job will run to create the 'sonataflow' database in the external database for the workflows to use.
-
-Finally, install the Helm Chart (including [setting up the external DB](https://github.com/redhat-developer/rhdh-chart/blob/main/docs/external-db.md)):
-```
-helm install <release_name> redhat-developer/backstage \
-  --set orchestrator.enabled=true \
-  --set orchestrator.sonataflowPlatform.externalDBsecretRef=<cred-secret> \
-  --set orchestrator.sonataflowPlatform.externalDBName=example \
-  --set orchestrator.sonataflowPlatform.externalDBHost=example \
-  --set orchestrator.sonataflowPlatform.externalDBPort=example
-```
+These plugins let Orchestrator workflows send notifications.
