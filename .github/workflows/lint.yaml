@@ -42,6 +42,11 @@ jobs:
           yamllint_version: '1.37.1'
           yamale_version: '6.0.0'
 
+      - name: Check that the chart installs the image it announces
+        run: |
+          python -m pip install --quiet pyyaml
+          python hack/check-image-pin.py charts/backstage
+
       - name: Run chart-testing (list-changed)
         id: list-changed
         run: |
