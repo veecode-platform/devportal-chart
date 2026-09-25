@@ -5005,6 +5005,51 @@
                                             "value": "/opt/app-root/src/dynamic-plugins.operator.yaml"
                                         },
                                         {
+                                            "name": "PG_HOST",
+                                            "valueFrom": {
+                                                "secretKeyRef": {
+                                                    "key": "PG_HOST",
+                                                    "name": "{{ first .Values.backstage.extraEnvVarsSecrets }}"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "name": "PG_PORT",
+                                            "valueFrom": {
+                                                "secretKeyRef": {
+                                                    "key": "PG_PORT",
+                                                    "name": "{{ first .Values.backstage.extraEnvVarsSecrets }}"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "name": "PG_USER",
+                                            "valueFrom": {
+                                                "secretKeyRef": {
+                                                    "key": "PG_USER",
+                                                    "name": "{{ first .Values.backstage.extraEnvVarsSecrets }}"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "name": "PG_PASSWORD",
+                                            "valueFrom": {
+                                                "secretKeyRef": {
+                                                    "key": "PG_PASSWORD",
+                                                    "name": "{{ first .Values.backstage.extraEnvVarsSecrets }}"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "name": "PG_DATABASE",
+                                            "valueFrom": {
+                                                "secretKeyRef": {
+                                                    "key": "PG_DATABASE",
+                                                    "name": "{{ first .Values.backstage.extraEnvVarsSecrets }}"
+                                                }
+                                            }
+                                        },
+                                        {
                                             "name": "POSTGRES_HOST",
                                             "valueFrom": {
                                                 "secretKeyRef": {

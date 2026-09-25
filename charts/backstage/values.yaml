@@ -514,6 +514,31 @@ upstream:
             # dynamic-plugins.yaml the installer actually reads.
           - name: DEVPORTAL_OPERATOR_CONFIG
             value: /opt/app-root/src/dynamic-plugins.operator.yaml
+          - name: PG_HOST
+            valueFrom:
+              secretKeyRef:
+                name: '{{ first .Values.backstage.extraEnvVarsSecrets }}'
+                key: PG_HOST
+          - name: PG_PORT
+            valueFrom:
+              secretKeyRef:
+                name: '{{ first .Values.backstage.extraEnvVarsSecrets }}'
+                key: PG_PORT
+          - name: PG_USER
+            valueFrom:
+              secretKeyRef:
+                name: '{{ first .Values.backstage.extraEnvVarsSecrets }}'
+                key: PG_USER
+          - name: PG_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: '{{ first .Values.backstage.extraEnvVarsSecrets }}'
+                key: PG_PASSWORD
+          - name: PG_DATABASE
+            valueFrom:
+              secretKeyRef:
+                name: '{{ first .Values.backstage.extraEnvVarsSecrets }}'
+                key: PG_DATABASE
           - name: POSTGRES_HOST
             valueFrom:
               secretKeyRef:
