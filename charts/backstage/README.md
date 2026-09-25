@@ -354,7 +354,7 @@ The `orchestrator-infra` chart installs cluster-wide prerequisites. VeeCode does
 ```console
 helm repo add redhat-developer https://redhat-developer.github.io/rhdh-chart
 helm repo update
-helm install devportal-orchestrator-infra redhat-developer/orchestrator-infra
+helm install devportal-orchestrator-infra redhat-developer/redhat-developer-hub-orchestrator-infra
 ```
 
 Approve the Install Plans created by the chart. Wait for the OpenShift Serverless and OpenShift Serverless Logic Operators to become available. Follow the chart's [post-install notes](https://github.com/redhat-developer/rhdh-chart/blob/main/charts/orchestrator-infra/templates/NOTES.txt).
