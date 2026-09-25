@@ -50,7 +50,7 @@ If the RHDH patch fails to apply (because upstream changed the same lines), the 
 After syncing, you may also need to update the dependency version under `charts/backstage/Chart.yaml` and rebuild the lock file (see below).
 
 > [!NOTE]
-> The [weekly CI workflow](./.github/workflows/sync-upstream-backstage.yaml) uses this same script to sync automatically and open a PR.
+> There is no automatic sync. The inherited weekly workflow was removed; see [docs/upstream-drift.md](docs/upstream-drift.md). Run the script by hand against a pinned upstream ref.
 
 ### Sync Lightspeed vendored config files
 
