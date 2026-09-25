@@ -59,3 +59,6 @@ upstream:
         emptyDir: {}
       - name: extensions-catalog
         emptyDir: {}
+      # VeeCode marketplace state; replacing extraVolumes must keep it.
+      - name: devportal-data
+        emptyDir: {}
