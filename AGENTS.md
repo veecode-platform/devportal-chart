@@ -49,6 +49,9 @@ is not listed here is eligible to disappear during the next upstream resync.
 | .github/workflows/release.yaml | Removed inherited chart-releaser workflow for the upstream repository's release channel. | Publication is deliberately delegated to next-charts; do not reintroduce a second index owner. |
 | .github/workflows/sync-lightspeed-configs.yaml | Removed inherited Red Hat AI Lightspeed sync and version-bump automation. | Lightspeed is not a VeeCode release dependency; add a separately reviewed workflow if that changes. |
 | .github/workflows/sync-upstream-backstage.yaml | Removed inherited automatic Backstage subtree sync because it would bypass the pinned RHDH tag and the VeeCode patch review seam. | Resync is manual and pinned until a VeeCode-aware sync workflow is designed. |
+| charts/backstage/ci/*-values.yaml | Each CI scenario keeps both product includes (dynamic-plugins.default.yaml and the image-baked face) instead of the inherited empty list, because the VeeCode values schema rejects a list without them. | Upstream CI values set includes to an empty list to skip plugin downloads; keep both entries when refreshing these files. |
+| .github/workflows/lint.yaml | Adds the image pin check before chart-testing. | Reapply after a resync of the inherited lint workflow. |
+| hack/check-image-pin.py | Fails a pull request or release when appVersion differs from the image tag or the pinned digest is not what Docker Hub serves for that tag. | New VeeCode script; also called by publish-chart-release.yml. |
 | AGENTS.md | Records this fork's drift and resync discipline. | Must be updated whenever the table changes. |
 
 The remaining inherited workflows are intentionally not listed as drift
