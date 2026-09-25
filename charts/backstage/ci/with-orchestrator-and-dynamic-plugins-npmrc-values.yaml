@@ -9,8 +9,10 @@ upstream:
 
 global:
   dynamic:
-    # CI: skip dynamic plugin downloads to speed up tests.
-    includes: []
+    # CI: keep both product includes; the values schema rejects a list without them.
+    includes:
+      - dynamic-plugins.default.yaml
+      - /opt/app-root/src/dynamic-plugins.veecode.yaml
     plugins:
       # Enable additional plugins, which should be merged with the Orchestrator plugins
       - package: oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/backstage-community-plugin-catalog-backend-module-scaffolder-relation-processor:bs_1.52.0__2.15.0
@@ -23,6 +25,13 @@ global:
 orchestrator:
   enabled: true
   plugins: []
+  # CI: the devportal chart runs without the bundled PostgreSQL, so point
+  # SonataFlow at the database the test action creates.
+  sonataflowPlatform:
+    externalDBsecretRef: orchestrator-ci-db
+    externalDBName: devportal
+    externalDBHost: pg.devportal-ci.svc
+    externalDBPort: "5432"
 
 test:
   injectTestNpmrcSecret: true

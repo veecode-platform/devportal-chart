@@ -1,19 +1,16 @@
 
-# RHDH Backstage Helm Chart for OpenShift
+# VeeCode DevPortal Helm Chart
 
-![Version: 0.1.24](https://img.shields.io/badge/Version-0.1.24-informational?style=flat-square)
+![Version: 0.1.25](https://img.shields.io/badge/Version-0.1.25-informational?style=flat-square)
 ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
 
 A Helm chart for deploying VeeCode DevPortal, a VeeCode distribution of Backstage.
 
 **Homepage:** <https://docs.platform.vee.codes>
 
-## Productized RHDH
-
-This repository now provides the productized RHDH chart.
-For the **Generally Available** version of this chart, see:
-
-* https://github.com/openshift-helm-charts/charts - official releases to https://charts.openshift.io/
+This chart installs VeeCode DevPortal, a fork of Red Hat Developer Hub. It is
+published as `devportal` in the [next-charts](https://veecode-platform.github.io/next-charts)
+Helm repository.
 
 ## Maintainers
 
@@ -28,11 +25,12 @@ For the **Generally Available** version of this chart, see:
 ## TL;DR
 
 ```console
-helm repo add bitnami https://charts.bitnami.com/bitnami
-helm repo add redhat-developer https://redhat-developer.github.io/rhdh-chart
-
-helm install my-backstage redhat-developer/backstage --version 0.1.20
+helm repo add veecode https://veecode-platform.github.io/next-charts
+helm install devportal veecode/devportal --version 0.1.25 -n devportal --create-namespace -f values.yaml
 ```
+
+The [DevPortal 3.x install guide](https://docs-next.platform.vee.codes/devportal/installation-guide/v3-preview/intro/)
+explains the runtime Secret and the `values.yaml` the install needs.
 
 ## Introduction
 
@@ -42,67 +40,22 @@ See [docs/product-face-overrides.md](../../docs/product-face-overrides.md) for h
 
 ## Prerequisites
 
-- Kubernetes 1.27+ ([OpenShift 4.14+](https://docs.redhat.com/en/documentation/openshift_container_platform/4.14/html-single/release_notes/index#ocp-4-14-about-this-release))
+- Kubernetes 1.27+
 - Helm 3.10+ or [latest release](https://github.com/helm/helm/releases)
-- PV provisioner support in the underlying infrastructure
-- [Backstage container image](https://backstage.io/docs/deployment/docker)
+- A PostgreSQL database. The chart ships no embedded database; it reads the connection from the `veecode-runtime-secrets` Secret.
 
 ## Usage
 
-Charts are available in the following formats:
-
-- [Chart Repository](https://helm.sh/docs/topics/chart_repository/)
-- [OCI Artifacts](https://helm.sh/docs/topics/registries/)
-
-### Note
-
-Up-to-date instructions on installing RHDH through the chart can be found in the [installation docs](https://github.com/redhat-developer/rhdh-chart/tree/main/.rhdh/docs/installation-ci-charts.adoc).
-
-### Installing from the Chart Repository
-
-The following command can be used to add the chart repository:
+List the published versions and install the newest one:
 
 ```console
-helm repo add bitnami https://charts.bitnami.com/bitnami
-helm repo add redhat-developer https://redhat-developer.github.io/rhdh-chart
+helm repo add veecode https://veecode-platform.github.io/next-charts
+helm repo update
+helm search repo veecode/devportal --versions
+helm upgrade -i <release_name> veecode/devportal --version <version> -f values.yaml
 ```
 
-Once the chart has been added, install this chart. However before doing so, please review the default `values.yaml` and adjust as needed.
-
-- To get proper connection between frontend and backend of Backstage please update the `apps.example.com` to match your cluster host:
-
-   ```yaml
-   global:
-     clusterRouterBase: apps.example.com
-   ```
-
-   > Tip: you can use `helm upgrade -i --set global.clusterRouterBase=apps.example.com ...` instead of a value file
-
-- If your cluster doesn't provide PVCs, you should disable PostgreSQL persistence via:
-
-   ```yaml
-   upstream:
-     postgresql:
-       primary:
-         persistence:
-           enabled: false
-   ```
-
-```console
-helm upgrade -i <release_name> redhat-developer/backstage
-```
-
-### Installing from an OCI Registry
-
-Charts are also available in OCI format. The list of available releases can be found [here](https://quay.io/repository/rhdh/chart?tab=tags).
-
-Install one of the available versions:
-
-```shell
-helm upgrade -i <release_name> oci://quay.io/rhdh/chart --version=<version>
-```
-
-> **Tip**: List all releases using `helm list`
+Each chart version pins the portal image by digest, and `appVersion` names that image.
 
 ### Testing a Release
 
@@ -175,8 +128,8 @@ Kubernetes: `>= 1.27.0-0`
 | global.catalogIndex | Catalog index configuration for automatic plugin discovery. The `install-dynamic-plugins.py` script pulls this image if the `CATALOG_INDEX_IMAGE` environment variable is set. The `dynamic-plugins.default.yaml` file will be extracted and written to `dynamic-plugins-root` volume mount. | object | `{"extraImages":[],"image":{"registry":"quay.io","repository":"veecode/plugin-catalog-index","tag":"bs_1.52.0"}}` |
 | global.catalogIndex.extraImages | Extra catalog index images for additional plugin discovery in the Extensions UI. Each item must include `registry`, `repository`, and `tag` fields; `name` is optional. Only catalog entities are extracted from extra images (no `dynamic-plugins.default.yaml` handling). | list | `[]` |
 | global.clusterRouterBase | Shorthand for users who do not want to specify a custom HOSTNAME. Used ONLY with the DEFAULT upstream.backstage.appConfig value and with OCP Route enabled. | string | `"apps.example.com"` |
-| global.dynamic.includes[0] |  | string | `"/opt/app-root/src/dynamic-plugins.veecode.yaml"` |
-| global.dynamic.includes[1] |  | string | `"/devportal-data/extensions-install.yaml"` |
+| global.dynamic.includes[0] |  | string | `"dynamic-plugins.default.yaml"` |
+| global.dynamic.includes[1] |  | string | `"/opt/app-root/src/dynamic-plugins.veecode.yaml"` |
 | global.dynamic.plugins |  | list | `[]` |
 | global.host | Custom hostname shorthand, overrides `global.clusterRouterBase`, `upstream.ingress.host`, `route.host`, and url values in `upstream.backstage.appConfig`. | string | `""` |
 | global.lightspeed | Built-in Lightspeed feature configuration. | object | Use Lightspeed compatible settings / configurations. |
@@ -210,7 +163,7 @@ Kubernetes: `>= 1.27.0-0`
 | global.lightspeed.sidecar.resources | Resource requests/limits for the Lightspeed Core sidecar. | object | `{"limits":{"cpu":"1000m","memory":"2Gi"},"requests":{"cpu":"100m","memory":"512Mi"}}` |
 | global.veecode.branding | config chain (see extraAppConfig veecode-product), so these win. | object | `{"fullLogo":"","fullLogoWidth":180,"iconLogo":"","title":"VeeCode DevPortal"}` |
 | global.veecode.guestAuth.enabled |  | bool | `true` |
-| global.veecode.preInstallCommand |  | string | `"node regenerate-extensions-install.js --config app-config.yaml --config app-config.example.yaml --config app-config.example.production.yaml --config app-config-from-configmap.yaml"` |
+| global.veecode.preInstallCommand |  | string | `"node regenerate-extensions-install.js --config app-config.yaml --config app-config.example.yaml --config app-config.example.production.yaml --config app-config-from-configmap.yaml && node merge-dynamic-plugins.js"` |
 | global.veecode.support.docsUrl |  | string | `"https://github.com/veecode-platform/support/discussions"` |
 | global.veecode.support.subtitle |  | string | `"VeeCode DevPortal support"` |
 | global.veecode.support.url |  | string | `"https://github.com/veecode-platform/support/discussions"` |

@@ -43,7 +43,7 @@ sources:
 # to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
 # VeeCode owns this chart version independently from the upstream chart version recorded above.
-version: 0.1.24
+version: 0.1.25
 # 0.1.9: the marketplace pre-step sees the operator's appConfig. The init
 #  container's regenerate-extensions-install.js read only the image-baked
 #  app-configs, so `backend.database.prefix` (declared in the deployment's own
@@ -107,4 +107,7 @@ version: 0.1.24
 #  veecode-homepage from its 1.0.3 artifact. This replaces an unreleased 0.1.24
 #  that only relabelled appVersion to beta.8 (chart-v0.1.23 still reports beta.6).
 #  Chart-only change beyond the image pointer.
+# 0.1.25: CI values keep both product includes, so the values schema no longer
+#  rejects every test scenario; the generated README and values.schema.json are
+#  regenerated. appVersion unchanged: the image stays 3.0.0-beta.9.
 appVersion: 3.0.0-beta.9

@@ -35,6 +35,11 @@ jobs:
         with:
           python-version: 3.14
 
+      - name: Check that the chart installs the image it announces
+        run: |
+          python -m pip install --quiet pyyaml
+          python hack/check-image-pin.py charts/backstage
+
       - name: Set up chart-testing
         uses: helm/chart-testing-action@6ec842c01de15ebb84c8627d2744a0c2f2755c9f # v2.8.0
         with:
