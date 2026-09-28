@@ -236,6 +236,8 @@ upstream:
 
 Orchestrator adds serverless workflows to Backstage. It supports application migration, developer onboarding, and workflows that use Backstage actions or external systems.
 
+Orchestrator is added on top of a regular install. First complete the [Prerequisites](#prerequisites) and create the `veecode-runtime-secrets` Secret and the `values.yaml` described in the [DevPortal 3.x install guide](https://docs-next.platform.vee.codes/devportal/installation-guide/v3-preview/intro/). The steps below add to that setup.
+
 The `orchestrator-infra` chart installs cluster-wide prerequisites. VeeCode does not publish this chart in [next-charts](https://veecode-platform.github.io/next-charts). Install it from the [Red Hat Developer Hub chart repository](https://github.com/redhat-developer/rhdh-chart/tree/main/charts/orchestrator-infra#readme) with cluster-admin access:
 
 ```console
@@ -276,15 +278,15 @@ orchestrator:
     externalDBPort: "5432"
 ```
 
-Install VeeCode DevPortal with this configuration:
+Install VeeCode DevPortal with your `values.yaml` and this configuration:
 
 ```console
 helm repo add veecode https://veecode-platform.github.io/next-charts
 helm repo update
-helm install devportal veecode/devportal --namespace devportal -f orchestrator-values.yaml
+helm install devportal veecode/devportal --namespace devportal -f values.yaml -f orchestrator-values.yaml
 ```
 
-The chart enables the Serverless and Serverless Logic Operators by default. If either operator is already installed in the cluster, disable its installation with `--set orchestrator.serverlessOperator.enabled=false` or `--set orchestrator.serverlessLogicOperator.enabled=false`.
+Keep `orchestrator.serverlessLogicOperator.enabled` at its default, `true`. In this chart it does not install an operator: it decides whether the chart creates the `SonataFlowPlatform` and its database job, which Orchestrator needs.
 
 ### Enablement of Notifications Plugin
 

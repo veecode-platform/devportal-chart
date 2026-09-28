@@ -9,6 +9,8 @@ Usage: hack/check-image-pin.py [chart-dir]
 """
 import json
 import sys
+import time
+import urllib.error
 import urllib.request
 
 import yaml
@@ -16,7 +18,24 @@ import yaml
 MANIFEST_TYPES = ",".join([
     "application/vnd.oci.image.index.v1+json",
     "application/vnd.docker.distribution.manifest.list.v2+json",
+    "application/vnd.oci.image.manifest.v1+json",
+    "application/vnd.docker.distribution.manifest.v2+json",
 ])
+
+
+def fetch(request, attempts=3):
+    for attempt in range(1, attempts + 1):
+        try:
+            return urllib.request.urlopen(request, timeout=30)
+        except urllib.error.HTTPError as e:
+            if e.code != 429 and e.code < 500:
+                raise
+            error = e
+        except (urllib.error.URLError, TimeoutError) as e:
+            error = e
+        if attempt < attempts:
+            time.sleep(5 * attempt)
+    sys.exit(f"::error::registry unreachable after {attempts} attempts: {error}")
 
 chart_dir = sys.argv[1] if len(sys.argv) > 1 else "charts/backstage"
 with open(f"{chart_dir}/Chart.yaml") as f:
@@ -31,14 +50,14 @@ app_version = str(chart.get("appVersion"))
 if registry != "docker.io":
     sys.exit(f"unsupported registry {registry}: this check only resolves docker.io")
 
-token = json.load(urllib.request.urlopen(
+token = json.load(fetch(
     "https://auth.docker.io/token?service=registry.docker.io"
     f"&scope=repository:{repo}:pull"))["token"]
 request = urllib.request.Request(
     f"https://registry-1.docker.io/v2/{repo}/manifests/{tag}",
     method="HEAD",
     headers={"Authorization": f"Bearer {token}", "Accept": MANIFEST_TYPES})
-published = urllib.request.urlopen(request).headers["Docker-Content-Digest"]
+published = fetch(request).headers["Docker-Content-Digest"]
 
 errors = []
 if app_version != tag:

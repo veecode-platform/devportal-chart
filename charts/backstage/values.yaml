@@ -703,7 +703,8 @@ test:
   injectTestNpmrcSecret: false
 orchestrator:
   enabled: false
-  #  Disable Serverless Logic Operator if it already exists on the cluster
+  #  Gates the SonataFlowPlatform and its database job (templates/sonataflows.yaml);
+  #  it installs no operator, so keep it true when Orchestrator is enabled.
   serverlessLogicOperator:
     enabled: true
   #  Disable Serverless Operator if it already exists on the cluster
