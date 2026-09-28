@@ -514,6 +514,10 @@ upstream:
             # dynamic-plugins.yaml the installer actually reads.
           - name: DEVPORTAL_OPERATOR_CONFIG
             value: /opt/app-root/src/dynamic-plugins.operator.yaml
+            # The pre-step reads app-config-from-configmap.yaml last, and that file
+            # resolves ${PG_*}. Set them explicitly: when the Postgres Service is
+            # named `pg`, Kubernetes service links inject PG_PORT=tcp://<ip>:5432
+            # into this container and the pre-step fails with a NaN port.
           - name: PG_HOST
             valueFrom:
               secretKeyRef:

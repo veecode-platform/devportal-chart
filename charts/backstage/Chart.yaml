@@ -109,5 +109,8 @@ version: 0.1.25
 #  Chart-only change beyond the image pointer.
 # 0.1.25: CI values keep both product includes, so the values schema no longer
 #  rejects every test scenario; the generated README and values.schema.json are
-#  regenerated. appVersion unchanged: the image stays 3.0.0-beta.9.
+#  regenerated. The installer init container also gets PG_* from the runtime
+#  Secret, so a Postgres Service named `pg` (whose service-link PG_PORT is
+#  tcp://<ip>:5432) no longer breaks the marketplace pre-step. appVersion
+#  unchanged: the image stays 3.0.0-beta.9.
 appVersion: 3.0.0-beta.9
