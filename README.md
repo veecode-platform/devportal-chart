@@ -7,10 +7,10 @@ This repository contains the VeeCode DevPortal chart: a renamed fork of [redhat-
 
 The DevPortal 3.x installation instructions are **STAGING** until promoted: follow the [DevPortal 3.x preview install guide](https://docs-next.platform.vee.codes/devportal/installation-guide/v3-preview/intro/).
 
-After preparing the Secret and `values.yaml` described there, the pinned chart install is:
+After preparing the Secret and `values.yaml` described there, install the newest version `helm search repo veecode/devportal --versions` lists:
 
 ```console
-helm install devportal veecode/devportal --version 0.1.0 -n devportal --create-namespace -f values.yaml
+helm install devportal veecode/devportal --version <version> -n devportal --create-namespace -f values.yaml
 ```
 
 Guest sign-in is enabled by default and maps the guest identity to the `ADMIN` user. This is useful for evaluation but dangerous for anything exposed; set `global.veecode.guestAuth.enabled: false` and configure a real authentication provider before exposing the portal.
