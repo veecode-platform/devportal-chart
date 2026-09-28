@@ -3,9 +3,11 @@ route:
   enabled: false
 
 global:
-  # CI: skip dynamic plugin downloads to speed up tests.
+  # CI: keep both product includes; the values schema rejects a list without them.
   dynamic:
-    includes: []
+    includes:
+      - dynamic-plugins.default.yaml
+      - /opt/app-root/src/dynamic-plugins.veecode.yaml
   # FIXME(RHIDP-15458): remove plugins override once next catalog index is stable with correct lightspeed refs in the DPDY
   lightspeed:
     plugins: []

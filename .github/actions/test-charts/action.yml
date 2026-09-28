@@ -192,6 +192,29 @@ runs:
         done
         kubectl create -f "https://github.com/apache/incubator-kie-tools/releases/download/${SONATAFLOW_OPERATOR_VERSION}/apache-kie-${SONATAFLOW_OPERATOR_VERSION}-incubating-sonataflow-operator.yaml"
 
+    - name: Create the runtime database the devportal chart expects
+      if: steps.list-changed.outputs.changed == 'true' && (inputs.chart == '' || inputs.chart == 'charts/backstage')
+      shell: bash
+      run: |
+        kubectl create namespace devportal-ci
+        kubectl -n devportal-ci create deployment pg --image=postgres:16
+        kubectl -n devportal-ci set env deployment/pg \
+          POSTGRES_USER=devportal POSTGRES_PASSWORD=ci-only POSTGRES_DB=devportal
+        kubectl -n devportal-ci expose deployment pg --port 5432
+        kubectl -n devportal-ci rollout status deployment/pg --timeout=180s
+        kubectl -n devportal-ci create secret generic veecode-runtime-secrets \
+          --from-literal=PG_HOST=pg.devportal-ci.svc \
+          --from-literal=PG_PORT=5432 \
+          --from-literal=PG_USER=devportal \
+          --from-literal=PG_PASSWORD=ci-only \
+          --from-literal=PG_DATABASE=devportal \
+          --from-literal=BACKEND_SECRET="$(openssl rand -hex 16)"
+        kubectl -n devportal-ci create secret generic orchestrator-ci-db \
+          --from-literal=POSTGRES_HOST=pg.devportal-ci.svc \
+          --from-literal=POSTGRES_PORT=5432 \
+          --from-literal=POSTGRES_USER=devportal \
+          --from-literal=POSTGRES_PASSWORD=ci-only
+
     - name: Run chart-testing (install)
       if: steps.list-changed.outputs.changed == 'true'
       shell: bash
@@ -236,6 +259,9 @@ runs:
           --target-branch "$INPUT_TARGET_BRANCH"
           --helm-extra-set-args="${EXTRA_ARGS[*]}"
         )
+        if [[ -z "$INPUT_CHART" || "$INPUT_CHART" == "charts/backstage" ]]; then
+          CT_ARGS+=(--namespace devportal-ci)
+        fi
         if [[ -n "$INPUT_CHART" ]]; then
           old_version=$(git show "origin/$INPUT_TARGET_BRANCH:$INPUT_CHART/Chart.yaml" 2>/dev/null | yq '.version' 2>/dev/null || echo "0.0.0")
           new_version=$(yq '.version' "$INPUT_CHART/Chart.yaml")

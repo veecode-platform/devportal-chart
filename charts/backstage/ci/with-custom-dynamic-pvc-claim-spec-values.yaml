@@ -2,10 +2,12 @@
 route:
   enabled: false
 
-# CI: skip dynamic plugin downloads to speed up tests.
+# CI: keep both product includes; the values schema rejects a list without them.
 global:
   dynamic:
-    includes: []
+    includes:
+      - dynamic-plugins.default.yaml
+      - /opt/app-root/src/dynamic-plugins.veecode.yaml
   lightspeed:
     plugins: []
 
@@ -56,4 +58,7 @@ upstream:
       - name: temp
         emptyDir: {}
       - name: extensions-catalog
+        emptyDir: {}
+      # VeeCode marketplace state; replacing extraVolumes must keep it.
+      - name: devportal-data
         emptyDir: {}

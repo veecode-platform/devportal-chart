@@ -3,9 +3,11 @@ route:
   enabled: false
 
 global:
-  # CI: skip dynamic plugin downloads to speed up tests.
+  # CI: keep both product includes; the values schema rejects a list without them.
   dynamic:
-    includes: []
+    includes:
+      - dynamic-plugins.default.yaml
+      - /opt/app-root/src/dynamic-plugins.veecode.yaml
   lightspeed:
     enabled: false
     plugins: []
