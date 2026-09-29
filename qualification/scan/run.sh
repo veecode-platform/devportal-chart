@@ -49,7 +49,7 @@ rm -f "$report"
 # exception before it matches, so that finding stays in .Vulnerabilities.
 jq_defs=$(
   cat <<'JQ'
-def vulns: [(.Results // [])[] | . as $r | (.Vulnerabilities // [])[] | . + {Target: (if $r.Class == "os-pkgs" then "OS packages" else $r.Target end)}];
+def vulns: [(.Results // [])[] | . as $r | (.Vulnerabilities // [])[] | . + {Location: (if $r.Class == "os-pkgs" then "OS packages" else (.PkgPath // $r.Target) end)}];
 def suppressed: [(.Results // [])[] | (.ExperimentalModifiedFindings // [])[] | select(.Type == "vulnerability") | .Finding];
 def blocking: vulns | map(select(.Severity == "CRITICAL" and .Status == "fixed"));
 JQ
@@ -170,11 +170,11 @@ report_note=
       echo
       echo "## Critical vulnerabilities with a fix"
       echo
-      echo "| ID | Package | Installed | Fixed in | Target |"
+      echo "| ID | Package | Installed | Fixed in | Location |"
       echo "| --- | --- | --- | --- | --- |"
       jq -r "$jq_defs"'
         blocking | sort_by(.PkgName, .VulnerabilityID)[]
-        | "| \(.VulnerabilityID) | \(.PkgName) | \(.InstalledVersion) | \(.FixedVersion) | \(.Target) |"' "$report"
+        | "| \(.VulnerabilityID) | \(.PkgName) | \(.InstalledVersion) | \(.FixedVersion) | \(.Location) |"' "$report"
     fi
     if [[ $(jq -r "$jq_defs suppressed | length" "$report") -gt 0 ]]; then
       echo
