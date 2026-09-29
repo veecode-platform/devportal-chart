@@ -7,6 +7,11 @@ set -euo pipefail
 
 : "${NAMESPACE:?set NAMESPACE}" "${RELEASE:?set RELEASE}" "${CHART:?set CHART}" "${OUT:?set OUT}"
 [[ -e "$CHART" ]] || { echo "CHART $CHART is neither a chart directory nor a package" >&2; exit 2; }
+INJECT_FAILURE=${INJECT_FAILURE:-none}
+case $INJECT_FAILURE in
+  none | missing-plugin | failed-sign-in) ;;
+  *) echo "INJECT_FAILURE must be none, missing-plugin or failed-sign-in, got $INJECT_FAILURE" >&2; exit 2 ;;
+esac
 HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 mkdir -p "$OUT"
 OUT=$(cd "$OUT" && pwd)
@@ -111,6 +116,10 @@ wait_for "$PORTAL_URL/.backstage/health/v1/readiness"
 wait_for "$KEYCLOAK_URL/realms/rhdh/.well-known/openid-configuration"
 
 wait "$SETUP" || fail "npm ci or playwright install" "$OUT/npm.log"
+if [[ $INJECT_FAILURE == failed-sign-in ]]; then
+  log "inject_failure=failed-sign-in: the specs sign in to Keycloak with a password the realm does not hold"
+  KEYCLOAK_USER_PASSWORD=$(secret)
+fi
 log "specs"
 cd "$HERE/e2e"
 BASE_URL=$PORTAL_URL KEYCLOAK_URL=$KEYCLOAK_URL KEYCLOAK_USER_PASSWORD=$KEYCLOAK_USER_PASSWORD \
