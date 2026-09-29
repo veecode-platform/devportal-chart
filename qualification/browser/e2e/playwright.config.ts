@@ -1,6 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const out = process.env.OUT ?? ".";
+const keycloakForward = new URL(process.env.KEYCLOAK_URL ?? "http://localhost:18080").host;
 const restartSpecs = ["**/configuration-test/config-map.spec.ts", "**/plugin-division-mode-schema/*.spec.ts"];
 
 // A plain config: the library's own defineConfig expects one OpenShift deployment
@@ -23,6 +24,7 @@ export default defineConfig({
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
+    launchOptions: { args: [`--host-resolver-rules=MAP keycloak ${keycloakForward}`] },
   },
   projects: [
     // The two specs that restart the portal run after the others, pass or fail.

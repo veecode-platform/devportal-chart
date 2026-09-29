@@ -1,8 +1,10 @@
 # The upstream e2e library deploys Keycloak from the Bitnami chart with legacy
 # images and an OpenShift Route. On KinD the browser job runs the official image
-# in dev mode instead. The browser reaches Keycloak through a port-forward on
-# localhost:18080 and the portal backend through the Service, so the backchannel
-# URLs follow the request host.
+# in dev mode instead. The portal backend reaches Keycloak through the Service and
+# the browser through a port-forward on localhost:18080, where Chromium maps the
+# name keycloak (see playwright.config.ts). Both use http://keycloak:8080 because
+# Keycloak builds the token revocation endpoint, which the backend calls on sign-out,
+# from KC_HOSTNAME whatever host the request used.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -24,7 +26,7 @@ spec:
             - secretRef: {name: keycloak-realm-env}
           env:
             - name: KC_HOSTNAME
-              value: http://localhost:18080
+              value: http://keycloak:8080
             - name: KC_HOSTNAME_BACKCHANNEL_DYNAMIC
               value: "true"
             - name: KC_HEALTH_ENABLED

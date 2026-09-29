@@ -4,13 +4,15 @@
 // need the library's deployment helpers, GitHub credentials or auth.environment
 // production. values-oidc.yaml sets the emailLocalPartMatchingUserEntityName resolver
 // and a 3-day session upfront. In realm.json, test1's email matches its user entity and
-// test2's does not.
+// test2's does not. The ingestion case reads the catalog with a guest token: the library's
+// getSessionAuthToken asks the oidc provider for env=production, which this install
+// (auth.environment development) does not configure, and upstream reads the catalog
+// through the deployment helpers that were left out.
 import { expect, type APIRequestContext } from "@playwright/test";
 import {
   CatalogApiHelper,
   LoginHelper,
   UIhelper,
-  getSessionAuthToken,
 } from "@red-hat-developer-hub/e2e-test-utils/helpers";
 import { requireEnv } from "@red-hat-developer-hub/e2e-test-utils/utils";
 
@@ -89,10 +91,10 @@ test.describe("Configure OIDC provider (using RHBK)", () => {
   });
 
   test(`Ingestion of users and groups: verify the user entities and groups are created with the correct relationships`, async ({
-    guestPage,
+    request,
   }, testInfo) => {
     const baseUrl = testInfo.project.use.baseURL!;
-    const token = await getSessionAuthToken(guestPage, new UIhelper(guestPage), baseUrl);
+    const token = await guestToken(request);
     for (const user of ["test1", "test2"]) {
       expect(await CatalogApiHelper.entityExists(baseUrl, token, "user", user)).toBe(true);
     }
