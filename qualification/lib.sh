@@ -180,9 +180,11 @@ portal_pod() {
 portal_pods() { "${K[@]}" get pod -l "$SEL" -o json | jq "[.items[] | $1] | length"; }
 
 wait_portal() {
+  local start=$SECONDS
   for _ in $(seq 1 90); do
     if [ "$(portal_pods .)" = 1 ] &&
       [ "$(portal_pods 'select(.metadata.deletionTimestamp == null) | select(any(.status.conditions[]?; .type == "Ready" and .status == "True"))')" = 1 ]; then
+      log "the portal was ready $((SECONDS - start))s after the wait began ($1)"
       return 0
     fi
     sleep 10
