@@ -4,10 +4,6 @@ on:
   pull_request:
     branches:
       - main
-    paths:
-      - charts/backstage/values.yaml
-      - qualification/**
-      - .github/workflows/qualification.yaml
   workflow_dispatch:
     inputs:
       chart_version:
@@ -131,3 +127,134 @@ jobs:
           name: qualification-sequence
           path: /tmp/qualification
           retention-days: 14
+
+  browser:
+    name: Browser on KinD
+    needs: scope
+    if: needs.scope.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Free disk space
+        uses: endersonmenezes/free-disk-space@7901478139cff6e9d44df5972fd8ab8fcade4db1 # v3
+        with:
+          remove_android: true
+          remove_dotnet: true
+          remove_haskell: true
+          rm_cmd: "rmz"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 24
+
+      - name: Set up Helm
+        uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+        with:
+          version: v3.21.3
+
+      - name: Create KinD cluster
+        uses: helm/kind-action@ef37e7f390d99f746eb8b610417061a60e82a6cc # v1.14.0
+
+      - name: Resolve the candidate chart
+        id: candidate
+        env:
+          EVENT: ${{ github.event_name }}
+          CHART_VERSION: ${{ inputs.chart_version }}
+          OUT: ${{ runner.temp }}/candidate
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" = pull_request ]; then
+            chart=charts/backstage
+          else
+            source qualification/lib.sh
+            chart=$(fetch_release "$CHART_VERSION" "$OUT")
+          fi
+          echo "chart=$chart" >> "$GITHUB_OUTPUT"
+
+      - name: Browser specs against the candidate chart
+        env:
+          NAMESPACE: qualification-browser
+          RELEASE: devportal
+          CHART: ${{ steps.candidate.outputs.chart }}
+          OUT: ${{ runner.temp }}/browser
+        run: bash qualification/browser/run.sh
+
+      - name: Scan the candidate image, report only
+        if: ${{ !cancelled() }}
+        env:
+          CHART: ${{ steps.candidate.outputs.chart }}
+          MODE: report
+          OUT: ${{ runner.temp }}/scan
+        run: |
+          set -euo pipefail
+          image=$(helm show values "$CHART" | yq '.upstream.backstage.image | .registry + "/" + .repository + "@" + .digest')
+          qualification/scan/run.sh "$image"
+
+      - name: Write the step summary
+        if: always()
+        env:
+          SCAN_OUT: ${{ runner.temp }}/scan
+        run: |
+          if [ -f "$SCAN_OUT/scan-summary.md" ]; then
+            cat "$SCAN_OUT/scan-summary.md" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload the browser evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: qualification-browser
+          path: ${{ runner.temp }}/browser
+          retention-days: 14
+
+      - name: Upload the scan report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: qualification-scan
+          path: ${{ runner.temp }}/scan
+          if-no-files-found: error
+          retention-days: 14
+
+  qualification:
+    name: Qualification
+    needs:
+      - scope
+      - sequence
+      - browser
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require every job the run decided on to have succeeded
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          set -euo pipefail
+          say() { echo "- $*" | tee -a "$GITHUB_STEP_SUMMARY"; }
+          result() { jq -r --arg job "$1" '.[$job].result' <<< "$NEEDS"; }
+          scope=$(result scope)
+          say "scope: $scope"
+          [ "$scope" = success ] || exit 1
+          case "$(jq -r '.scope.outputs.run // ""' <<< "$NEEDS")" in
+            true) want=success ;;
+            false)
+              want=skipped
+              say "nothing to qualify, so both jobs are meant to be skipped"
+              ;;
+            *)
+              say "scope decided nothing"
+              exit 1
+              ;;
+          esac
+          status=0
+          for job in sequence browser; do
+            got=$(result "$job")
+            say "$job: $got, wanted $want"
+            [ "$got" = "$want" ] || status=1
+          done
+          exit "$status"
