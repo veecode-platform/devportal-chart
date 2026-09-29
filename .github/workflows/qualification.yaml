@@ -100,6 +100,16 @@ jobs:
           helm repo add bitnami https://charts.bitnami.com/bitnami
           helm dependency build charts/backstage
 
+      - name: Fetch the loaded-plugins check of devportal-local at a pinned commit
+        env:
+          # The merge that made the check read the face and the installer logs from FACE_CMD and LOGS_CMD.
+          COMMIT: caada6ad2e69438aed9a8ca827ea764ef0264f3a
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error --retry 3 --output "$RUNNER_TEMP/check-loaded-plugins.sh" \
+            "https://raw.githubusercontent.com/veecode-platform/devportal-local/$COMMIT/scripts/check-loaded-plugins.sh"
+          sha256sum "$RUNNER_TEMP/check-loaded-plugins.sh"
+
       - name: Create KinD cluster
         uses: helm/kind-action@ef37e7f390d99f746eb8b610417061a60e82a6cc # v1.14.0
         with:
@@ -110,6 +120,7 @@ jobs:
           CANDIDATE_VERSION: ${{ inputs.chart_version }}
           CANDIDATE_CHART: ${{ github.event_name == 'pull_request' && 'charts/backstage' || '' }}
           SELF_TEST: ${{ needs.scope.outputs.self_test }}
+          LOADED_PLUGINS_CHECK: ${{ runner.temp }}/check-loaded-plugins.sh
           KIND_NODE: qualification-control-plane
         run: bash qualification/sequence.sh
 
