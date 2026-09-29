@@ -36,6 +36,17 @@ live=(IGNOREFILE="$fixtures/ignore-valid.yaml" TRIVY_REPORT="$fixtures/report-li
 expect "block fails on a critical whose exception has expired" 1 env MODE=block "${expired[@]}" "$here/run.sh" "$image"
 expect "report does not fail on the same report" 0 env MODE=report "${expired[@]}" "$here/run.sh" "$image"
 expect "block passes when a live exception covers the critical" 0 env MODE=block "${live[@]}" "$here/run.sh" "$image"
+stub=$work/stub
+mkdir "$stub"
+cat >"$stub/trivy" <<'STUB'
+#!/usr/bin/env bash
+if [[ $1 == --version ]]; then echo "Version: $STUB_VERSION"; exit 0; fi
+exit "$STUB_EXIT"
+STUB
+chmod +x "$stub/trivy"
+stubbed=(PATH="$stub:$PATH" STUB_VERSION="$(sed -n 's/^TRIVY_VERSION=//p' "$here/run.sh")")
+expect "report exits non-zero when Trivy fails" 3 env MODE=report "${stubbed[@]}" STUB_EXIT=1 "$here/run.sh" "$image"
+expect "report exits non-zero when Trivy writes no report" 3 env MODE=report "${stubbed[@]}" STUB_EXIT=0 "$here/run.sh" "$image"
 expect "run refuses an image given by tag" 2 "$here/run.sh" example.invalid/fixture:latest
 
 exit $((failures > 0))
