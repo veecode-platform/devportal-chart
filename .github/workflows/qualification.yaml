@@ -1,0 +1,133 @@
+name: Qualification
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - charts/backstage/values.yaml
+      - qualification/**
+      - .github/workflows/qualification.yaml
+  workflow_dispatch:
+    inputs:
+      chart_version:
+        description: Published devportal chart version to qualify, for example 0.1.25
+        required: true
+        type: string
+      self_test:
+        description: Report the checks that need a change the candidate lacks as SKIP instead of failing them
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.number || format('dispatch-{0}', inputs.chart_version) }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  scope:
+    name: Decide what the run qualifies
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.decide.outputs.run }}
+      self_test: ${{ steps.decide.outputs.self_test }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Compare the pinned image and the qualification files with the base
+        id: decide
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          SELF_TEST_INPUT: ${{ inputs.self_test }}
+        run: |
+          set -euo pipefail
+          image() { yq -o=json -I=0 '.upstream.backstage.image' "$1"; }
+          if [ "$EVENT" = workflow_dispatch ]; then
+            echo "Dispatched: qualify the published package."
+            run=true
+            self_test=$SELF_TEST_INPUT
+          else
+            git show "$BASE_SHA:charts/backstage/values.yaml" > "$RUNNER_TEMP/base-values.yaml"
+            if [ "$(image "$RUNNER_TEMP/base-values.yaml")" != "$(image charts/backstage/values.yaml)" ]; then
+              echo "The pinned image changed: qualify the candidate chart."
+              run=true
+              self_test=false
+            elif [ -n "$(git diff --name-only "$BASE_SHA" HEAD -- qualification .github/workflows/qualification.yaml)" ]; then
+              echo "Only the qualification changed: self-test it against the current chart."
+              run=true
+              self_test=true
+            else
+              echo "Neither the pinned image nor the qualification changed: nothing to qualify."
+              run=false
+              self_test=false
+            fi
+          fi
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+          echo "self_test=$self_test" >> "$GITHUB_OUTPUT"
+
+  sequence:
+    name: Sequence on KinD
+    needs: scope
+    if: needs.scope.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Free disk space
+        uses: endersonmenezes/free-disk-space@7901478139cff6e9d44df5972fd8ab8fcade4db1 # v3
+        with:
+          remove_android: true
+          remove_dotnet: true
+          remove_haskell: true
+          rm_cmd: "rmz"
+
+      - name: Set up Helm
+        uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+        with:
+          version: v3.21.3
+
+      - name: Set up skopeo
+        run: command -v skopeo || { sudo apt-get update && sudo apt-get install -y skopeo; }
+
+      - name: Build the candidate chart of this pull request
+        if: github.event_name == 'pull_request'
+        run: |
+          helm repo add bitnami https://charts.bitnami.com/bitnami
+          helm dependency build charts/backstage
+
+      - name: Create KinD cluster
+        uses: helm/kind-action@ef37e7f390d99f746eb8b610417061a60e82a6cc # v1.14.0
+        with:
+          cluster_name: qualification
+
+      - name: Previous final chart, marketplace install, upgrade, broken package, restarts, rollback
+        env:
+          CANDIDATE_VERSION: ${{ inputs.chart_version }}
+          CANDIDATE_CHART: ${{ github.event_name == 'pull_request' && 'charts/backstage' || '' }}
+          SELF_TEST: ${{ needs.scope.outputs.self_test }}
+          KIND_NODE: qualification-control-plane
+        run: bash qualification/sequence.sh
+
+      - name: Write the step summary
+        if: always()
+        run: |
+          if [ -f /tmp/qualification/summary.md ]; then
+            cat /tmp/qualification/summary.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload the sequence evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: qualification-sequence
+          path: /tmp/qualification
+          retention-days: 14
