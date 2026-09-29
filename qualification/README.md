@@ -148,8 +148,9 @@ gh workflow run qualification.yaml -R veecode-platform/devportal-chart --ref BRA
   -f chart_version=0.1.25 -f self_test=true -f inject_failure=missing-plugin
 ```
 
-The run must go red, and only the job that the value breaks. Each value has its own
-concurrency group, so an injected run never cancels the qualification of the same version.
+The run must go red, and only the job that the value breaks. A dispatch's concurrency
+group holds its ref, `chart_version`, `self_test` and `inject_failure`, so an injected run,
+a self-test and a full run of the same version never cancel each other.
 
 ## Run it on another cluster
 
