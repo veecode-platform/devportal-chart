@@ -55,7 +55,12 @@ check_catalog() {
   local tag=$1 step=$2 ref index missing extra errors
   ref=$("${K[@]}" get deploy "$DEPLOY" -o json |
     jq -r '.spec.template.spec.initContainers[] | select(.name == "install-dynamic-plugins") | .env[] | select(.name == "CATALOG_INDEX_IMAGE") | .value')
-  index=$(index_packages "$ref")
+  if index=$(index_packages "$ref"); then
+    assert "$step" "the catalog index image can be read" "" "$(wc -l < "$index") packages in $ref" true
+  else
+    record "$step" "the catalog index image can be read" "" 0 "$ref could not be fetched or lists no package, see steps.log"
+    return 0
+  fi
   jq -r '.items[] | (.metadata.namespace // "default") + "/" + .metadata.name' "$OUT/packages-$tag.json" |
     sort -u > "$OUT/served-$tag.txt"
   { cat "$index"; echo "$FIXTURE_PACKAGE"; } | sort -u > "$OUT/expected-$tag.txt"
@@ -79,6 +84,7 @@ check_artifacts() {
   awk -F'\t' '$2 != "resolves"' "$OUT/artifacts-$tag.tsv" > "$OUT/unresolved-$tag.txt"
   total=$(wc -l < "$OUT/offered-$tag.txt")
   missing=$(wc -l < "$OUT/unresolved-$tag.txt")
+  assert "$step" "the portal offers artifacts to resolve" "" "$total offered" test "$total" -gt 0
   assert "$step" "every offered artifact resolves" catalog-fixes "$((total - missing)) of $total resolve" test "$missing" -eq 0
 }
 

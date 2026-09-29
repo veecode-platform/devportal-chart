@@ -256,17 +256,22 @@ wait_catalog() {
   log "the package list did not settle with the fixture in five minutes ($1)"
 }
 
+# Fails, and leaves no package list, when the index cannot be fetched, unpacked or read, or lists no package.
 index_packages() {
-  local dir layer
+  local dir layers layer
   dir=$OUT/index/$(printf '%s' "$1" | sha256sum | cut -c1-12)
-  if [ ! -f "$dir/packages.txt" ]; then
+  if [ ! -s "$dir/packages.txt" ]; then
+    rm -rf "$dir"
     mkdir -p "$dir/fs"
-    retry skopeo --override-os linux --override-arch amd64 copy --quiet --src-no-creds "docker://$1" "dir:$dir/image" >&2
-    for layer in $(jq -r '.layers[].digest' "$dir/image/manifest.json"); do
-      tar -xzf "$dir/image/${layer#sha256:}" -C "$dir/fs"
+    retry skopeo --override-os linux --override-arch amd64 copy --quiet --src-no-creds "docker://$1" "dir:$dir/image" >&2 || return 1
+    layers=$(jq -r '.layers[].digest' "$dir/image/manifest.json") || return 1
+    for layer in $layers; do
+      tar -xzf "$dir/image/${layer#sha256:}" -C "$dir/fs" || return 1
     done
     yq -N 'select(.kind == "Package") | (.metadata.namespace // "default") + "/" + .metadata.name' \
-      "$dir"/fs/catalog-entities/extensions/packages/*.yaml | sort -u > "$dir/packages.txt"
+      "$dir"/fs/catalog-entities/extensions/packages/*.yaml | sort -u > "$dir/packages.tmp" || return 1
+    [ -s "$dir/packages.tmp" ] || { log "$1 lists no package"; return 1; }
+    mv "$dir/packages.tmp" "$dir/packages.txt"
   fi
   echo "$dir/packages.txt"
 }
