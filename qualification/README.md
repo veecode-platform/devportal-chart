@@ -55,6 +55,10 @@ The sequence has six steps. After each one it checks that:
 | 5 | Stops the portal, restores the backup, and rolls back to revision 1. Then uninstalls the good plugin. | loaded | The broken package's row is gone. |
 | 6 | Restarts the portal. | absent | |
 
+The good plugin is an OCI package of the index whose reference has no `!` plugin path.
+A bundled plugin cannot hold a digest, so it could never satisfy the `resolved_digest`
+check.
+
 Step 6 shows that the marketplace change survived the restart, which only holds when
 the marketplace stores its state in the database.
 
@@ -97,8 +101,8 @@ with `crictl`. These variables configure it:
 | `KIND_NODE` | `qualification-control-plane` | The node container that pulls the images. |
 | `OUT` | `/tmp/qualification` | Where the summary, logs, and responses go. |
 | `PORT` | `17007` | The local port of the port-forward. |
-| `GOOD_PACKAGE` | `rhdh/bcp-ctlg-backend-mod-scaffolder-relation-processor` | The package the sequence installs and later removes. |
-| `GOOD_PLUGIN` | `backstage-community-plugin-catalog-backend-module-scaffolder-relation-processor-dynamic` | The name that package loads under. |
+| `GOOD_PACKAGE` | `rhdh/backstage-community-plugin-todo-backend` | The package the sequence installs and later removes. |
+| `GOOD_PLUGIN` | `@backstage-community/plugin-todo-backend-dynamic` | The name that package loads under. |
 
 `OUT/summary.md` holds the table with PASS, FAIL, or SKIP per check. The workflow adds
 it to the job summary and uploads `OUT` as the `qualification-sequence` artifact.

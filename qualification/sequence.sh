@@ -5,8 +5,8 @@ set -euo pipefail
 # shellcheck source=qualification/lib.sh
 source "$(dirname "$0")/lib.sh"
 
-GOOD_PACKAGE=${GOOD_PACKAGE:-rhdh/bcp-ctlg-backend-mod-scaffolder-relation-processor}
-GOOD_PLUGIN=${GOOD_PLUGIN:-backstage-community-plugin-catalog-backend-module-scaffolder-relation-processor-dynamic}
+GOOD_PACKAGE=${GOOD_PACKAGE:-rhdh/backstage-community-plugin-todo-backend}
+GOOD_PLUGIN=${GOOD_PLUGIN:-@backstage-community/plugin-todo-backend-dynamic}
 VALUES=$HERE/values/sequence.yaml
 FIXTURE_ARTIFACT=$(yq '.spec.dynamicArtifact' "$HERE/fixtures/broken-package.yaml")
 CATALOG_ERRORS='Policy check failed for package:|while validating the entity package:|entity="package:'
