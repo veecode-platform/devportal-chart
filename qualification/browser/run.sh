@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The qualification's browser job (contract K5). It installs CHART as RELEASE in a
+# The qualification's browser job. It installs CHART as RELEASE in a
 # new NAMESPACE, next to a PostgreSQL and a Keycloak whose realm and users it
 # creates, then runs the RHDH specs adapted in e2e/. The Playwright report, traces,
 # screenshots and the cluster logs land under OUT, and the exit code is the result.
