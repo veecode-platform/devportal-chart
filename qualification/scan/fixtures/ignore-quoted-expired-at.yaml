@@ -1,0 +1,4 @@
+vulnerabilities:
+  - id: CVE-2021-44906
+    statement: Fixture. A quoted date stops Trivy with a parse error.
+    expired_at: "2099-12-31"

@@ -1,0 +1,23 @@
+# Exceptions to the vulnerability gate in qualification/scan/run.sh.
+#
+# Trivy reads this file only when it is passed with --ignorefile, which run.sh
+# does. Keep the top-level key spelled `vulnerabilities`: Trivy skips any other
+# key without a warning.
+#
+# Fields of each entry:
+#   id          The CVE or advisory ID exactly as the scan report shows it.
+#   statement   Why the risk is accepted.
+#   expired_at  The day the exception stops applying, written as an unquoted
+#               YAML date (2026-12-31) or timestamp. From that day on the
+#               finding blocks again. A quoted date makes Trivy stop with a
+#               parse error.
+#
+# Trivy treats statement and expired_at as optional, so an entry without them
+# would suppress a finding forever. qualification/scan/check-ignorefile.sh
+# fails on such an entry, and run.sh calls it before every scan.
+#
+# Example:
+#   - id: CVE-2099-0001
+#     statement: Not reachable from the portal; fixed by the next base image.
+#     expired_at: 2099-01-31
+vulnerabilities: []
