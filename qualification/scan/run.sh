@@ -8,7 +8,7 @@
 #   OUT            output directory, default ./scan-out
 #   IGNOREFILE     exception file, default .trivyignore.yaml at the repository root
 #   TRIVY_BIN_DIR  where the pinned Trivy download is kept
-#   TRIVY_REPORT   evaluate this Trivy JSON report instead of scanning
+#   TRIVY_REPORT   evaluate this Trivy JSON report of IMAGE_REF instead of scanning
 #
 # Exit 2 is a usage error. Exit 3 means the scan did not run (Trivy failed or wrote no
 # report); it applies in both modes, so a run cannot pass without a report.
@@ -37,6 +37,10 @@ image=$1
 [[ -f $ignorefile ]] || usage_error "exception file not found: $ignorefile"
 [[ -z ${TRIVY_REPORT:-} || -f ${TRIVY_REPORT:-} ]] || usage_error "TRIVY_REPORT not found: ${TRIVY_REPORT:-}"
 command -v jq >/dev/null || usage_error "jq is required"
+if [[ -n ${TRIVY_REPORT:-} ]]; then
+  jq -e --arg suffix "@${image##*@}" '([.ArtifactName] + (.Metadata.RepoDigests // [])) | any(. != null and endswith($suffix))' "$TRIVY_REPORT" >/dev/null 2>&1 ||
+    usage_error "TRIVY_REPORT is not a Trivy report of $image"
+fi
 
 mkdir -p "$out"
 report=$out/trivy.json

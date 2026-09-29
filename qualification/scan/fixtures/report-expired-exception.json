@@ -1,7 +1,7 @@
 {
   "SchemaVersion": 2,
-  "ArtifactName": "proj",
-  "ArtifactType": "filesystem",
+  "ArtifactName": "example.invalid/fixture@sha256:0000000000000000000000000000000000000000000000000000000000000000",
+  "ArtifactType": "container_image",
   "Trivy": {
     "Version": "0.74.0"
   },
