@@ -77,13 +77,16 @@ check_catalog() {
 }
 
 check_artifacts() {
-  local tag=$1 step=$2 total missing
+  local tag=$1 step=$2 total missing errors first
   jq -r --arg f "$FIXTURE_ARTIFACT" '.items[].spec.dynamicArtifact // empty | select(. != $f)' "$OUT/packages-$tag.json" |
     sort -u > "$OUT/offered-$tag.txt"
   resolve_artifacts "$OUT/offered-$tag.txt" > "$OUT/artifacts-$tag.tsv"
   awk -F'\t' '$2 != "resolves"' "$OUT/artifacts-$tag.tsv" > "$OUT/unresolved-$tag.txt"
   total=$(wc -l < "$OUT/offered-$tag.txt")
   missing=$(wc -l < "$OUT/unresolved-$tag.txt")
+  errors=$(awk -F'\t' '$2 == "error"' "$OUT/artifacts-$tag.tsv" | wc -l)
+  first=$(awk -F'\t' '$2 == "error" { print $1 ": " $3; exit }' "$OUT/artifacts-$tag.tsv")
+  assert "$step" "every registry lookup got an answer" "" "$errors error(s)${first:+, first: $first}" test "$errors" -eq 0
   assert "$step" "the portal offers artifacts to resolve" "" "$total offered" test "$total" -gt 0
   assert "$step" "every offered artifact resolves" catalog-fixes "$((total - missing)) of $total resolve" test "$missing" -eq 0
 }
@@ -153,8 +156,9 @@ summary_header "Candidate devportal $CAND from $CANDIDATE_CHART, previous final 
 
 setup_database
 serve_fixture
-assert start "the broken package's artifact does not exist" "" "$FIXTURE_ARTIFACT" \
-  test "$(resolve_oci "$FIXTURE_ARTIFACT" | cut -f2)" = missing
+FIXTURE_ANSWER=$(resolve_oci "$FIXTURE_ARTIFACT")
+assert start "the broken package's artifact does not exist" "" "$FIXTURE_ARTIFACT: $(cut -f2- <<< "$FIXTURE_ANSWER" | tr '\t' ' ')" \
+  test "$(cut -f2 <<< "$FIXTURE_ANSWER")" = missing
 
 S1="1 install $PREV"
 log "$S1"

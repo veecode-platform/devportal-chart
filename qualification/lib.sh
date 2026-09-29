@@ -276,18 +276,30 @@ index_packages() {
   echo "$dir/packages.txt"
 }
 
+# Prints the reference and resolves, missing, or error with the registry's message. Missing is
+# an answer that says the image is not there: manifest unknown, name unknown, or the unauthorized
+# or denied that quay.io and Docker Hub give an anonymous client for a repository that does not exist.
+# A rate limit, a timeout, a TLS failure or a server error is an error, retried once.
 resolve_oci() {
-  local image=${1#oci://}
+  local image=${1#oci://} msg attempt
   image=${image%%!*}
-  if skopeo inspect --raw --no-creds "docker://$image" > /dev/null 2>&1 ||
-    { sleep 5 && skopeo inspect --raw --no-creds "docker://$image" > /dev/null 2>&1; }; then
-    printf '%s\tresolves\n' "$1"
-  else
-    printf '%s\tmissing\n' "$1"
-  fi
+  for attempt in 1 2; do
+    if msg=$(skopeo inspect --raw --no-creds "docker://$image" 2>&1 > /dev/null); then
+      printf '%s\tresolves\n' "$1"
+      return
+    fi
+    case $msg in
+      *"manifest unknown"* | *"name unknown"* | *"StatusCode: 404"* | *"unauthorized:"* | *"requested access to the resource is denied"*)
+        printf '%s\tmissing\n' "$1"
+        return
+        ;;
+    esac
+    [ "$attempt" = 2 ] || sleep 5
+  done
+  printf '%s\terror\t%s\n' "$1" "$(printf '%s' "$msg" | tail -1 | tr '\t\n' '  ' | cut -c1-300)"
 }
 
-# Registry lookups are cached for the run; bundled refs depend on the running image.
+# Registry answers are cached for the run, errors are not; bundled refs depend on the running image.
 resolve_artifacts() {
   local pod ref
   pod=$(portal_pod)
@@ -295,7 +307,9 @@ resolve_artifacts() {
   export -f resolve_oci
   { grep '^oci://' "$1" || true; } | comm -23 - <(cut -f1 "$OUT/oci-artifacts.tsv" | sort -u) > "$OUT/oci-new.txt"
   # shellcheck disable=SC2016 # $1 expands in the child bash.
-  xargs -r -P 8 -I{} bash -c 'resolve_oci "$1"' _ {} < "$OUT/oci-new.txt" >> "$OUT/oci-artifacts.tsv"
+  xargs -r -P 8 -I{} bash -c 'resolve_oci "$1"' _ {} < "$OUT/oci-new.txt" > "$OUT/oci-answers.tsv"
+  awk -F'\t' '$2 != "error"' "$OUT/oci-answers.tsv" >> "$OUT/oci-artifacts.tsv"
+  awk -F'\t' '$2 == "error"' "$OUT/oci-answers.tsv"
   awk -F'\t' 'NR == FNR { wanted[$1] = 1; next } $1 in wanted' "$1" "$OUT/oci-artifacts.tsv"
   while read -r ref; do
     case $ref in
