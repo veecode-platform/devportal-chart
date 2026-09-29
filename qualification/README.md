@@ -52,7 +52,7 @@ The sequence has six steps. After each one it checks that:
 | 2 | Restarts the portal, then backs up every database with `pg_dump`. | loaded | |
 | 3 | Upgrades to the candidate, then installs the broken package through the marketplace. | loaded | The pre-step summary counts every row (`prestep-skip`). |
 | 4 | Restarts the candidate twice. | loaded (`prestep-skip`) | The pre-step skips the broken package (`prestep-skip`). The broken package is in `failedInstalls`, and the good row holds `resolved_digest`, read with psql (`marketplace-backend`). |
-| 5 | Stops the portal, restores the backup, and rolls back to revision 1. Then uninstalls the good plugin. | loaded | The broken package's row is gone, and the good row is stored as disabled. |
+| 5 | Stops the portal, restores the backup, and rolls back to revision 1. Then uninstalls the good plugin. | loaded | The broken package's row is gone, and the good row is stored as disabled. The good package is in `pendingRemovals` (`marketplace-backend`). |
 | 6 | Restarts the portal. | absent | |
 
 The good plugin is an OCI package of the index whose reference has no `!` plugin path.
@@ -69,9 +69,12 @@ A check tagged with one of these names needs a change the candidate may lack:
 - `prestep-skip`: the pre-step skips a row whose digest does not resolve, instead of
   abandoning the whole regeneration (devportal-core,
   `veecode/regenerate-extensions-install.js`).
-- `marketplace-backend`: the marketplace backend stores `resolved_digest` and lists
-  `failedInstalls` in `GET /api/extensions/pending-changes` (devportal-plugins,
-  `devportal-marketplace-backend`).
+- `marketplace-backend`: the marketplace backend stores `resolved_digest`, lists
+  `failedInstalls` in `GET /api/extensions/pending-changes`, and matches a
+  selector-less OCI reference to its loaded plugin, so that `pendingRemovals` lists it
+  (devportal-plugins, `devportal-marketplace-backend`). Step 5 runs the previous
+  chart, so a full run passes the `pendingRemovals` check only when the previous chart
+  has that fix.
 - `catalog-fixes`: the catalog index offers only packages whose artifacts exist and
   that the portal accepts (devportal-plugin-export-overlays).
 

@@ -37,17 +37,20 @@ storage_mode() {
 }
 
 change_package() {
-  local step=$1 package=$2 artifact=$3 disabled=$4 tag=$5 code stored
+  local step=$1 package=$2 artifact=$3 disabled=$4 tag=$5 code stored note=''
   code=$(set_disabled "$package" "$disabled" "$tag")
   assert "$step" "set $package disabled=$disabled through the marketplace" "" "HTTP $code" test "$code" = 200
+  api pending-changes > "$OUT/pending-$tag.json"
   if [ "$disabled" = false ]; then
-    api pending-changes > "$OUT/pending-$tag.json"
     assert "$step" "$package is in pendingInstalls" "" "$(jq -c '.pendingInstalls' "$OUT/pending-$tag.json")" \
       json_true "$OUT/pending-$tag.json" --arg a "$artifact" ".pendingInstalls | any(.[]; . == \$a)"
   else
-    # Chart 0.1.24, which runs at the rollback, does not list a selector-less OCI row in pendingRemovals.
     stored=$(sql backstage_plugin_extensions "select disabled from marketplace_installations where package_name = '$artifact'")
     assert "$step" "the row of $package is stored as disabled" "" "disabled=${stored:-no row}" test "$stored" = t
+    json_true "$OUT/pending-$tag.json" --arg a "$artifact" ".pendingRemovals | any(.[]; . == \$a)" ||
+      note="; the marketplace backend does not match a selector-less ref to a loaded plugin"
+    assert "$step" "$package is in pendingRemovals" marketplace-backend "$(jq -c '.pendingRemovals' "$OUT/pending-$tag.json")$note" \
+      json_true "$OUT/pending-$tag.json" --arg a "$artifact" ".pendingRemovals | any(.[]; . == \$a)"
   fi
 }
 
