@@ -36,6 +36,8 @@ live=(IGNOREFILE="$fixtures/ignore-valid.yaml" TRIVY_REPORT="$fixtures/report-li
 expect "block fails on a critical whose exception has expired" 1 env MODE=block "${expired[@]}" "$here/run.sh" "$image"
 expect "report does not fail on the same report" 0 env MODE=report "${expired[@]}" "$here/run.sh" "$image"
 expect "block passes when a live exception covers the critical" 0 env MODE=block "${live[@]}" "$here/run.sh" "$image"
+other=example.invalid/other@sha256:$(printf '1%.0s' {1..64})
+expect "run refuses a report of another image" 2 env MODE=block "${live[@]}" "$here/run.sh" "$other"
 stub=$work/stub
 mkdir "$stub"
 cat >"$stub/trivy" <<'STUB'
