@@ -103,7 +103,7 @@ check_prestep() {
   fi
   if [ "$phase" = broken ]; then
     assert "$step" "the pre-step skips the broken package" prestep-skip "$(grep -c 'VEECODE prestep: WARNING' "$OUT/init-$tag.log" || true) warning(s)" \
-      grep -qE 'VEECODE prestep: WARNING .*skipping "[^"]*m22-qualification-broken-plugin' "$OUT/init-$tag.log"
+      grep -qE 'VEECODE prestep: WARNING .*skipping "[^"]*qualification-broken-plugin' "$OUT/init-$tag.log"
   fi
 }
 
