@@ -95,7 +95,7 @@ fetch_release() {
   mkdir -p "$dir"
   retry curl --fail --location --silent --show-error "$RELEASES/chart-v$version/$package" --output "$dir/$package"
   retry curl --fail --location --silent --show-error "$RELEASES/chart-v$version/$package.sha256" --output "$dir/$package.sha256"
-  (cd "$dir" && sha256sum --check --strict "$package.sha256") >&2
+  (cd "$dir" && sha256sum --check --strict "$package.sha256") >&2 || fail "$package does not match $package.sha256"
   [ "$(chart_field "$dir/$package" name)" = devportal ] || fail "$package does not embed the chart name devportal"
   [ "$(chart_field "$dir/$package" version)" = "$version" ] || fail "$package does not embed the version $version"
   echo "$dir/$package"
