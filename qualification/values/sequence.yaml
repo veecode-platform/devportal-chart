@@ -1,0 +1,22 @@
+global:
+  host: localhost
+upstream:
+  backstage:
+    podSecurityContext:
+      fsGroup: 1001
+    appConfig:
+      app:
+        baseUrl: http://localhost:17007
+      backend:
+        baseUrl: http://localhost:17007
+        cors:
+          origin: http://localhost:17007
+        reading:
+          allow:
+            - host: qualification-fixtures
+      catalog:
+        locations:
+          - type: url
+            target: http://qualification-fixtures/broken-package.yaml
+            rules:
+              - allow: [Package]

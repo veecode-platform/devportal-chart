@@ -1,0 +1,19 @@
+apiVersion: extensions.backstage.io/v1alpha1
+kind: Package
+metadata:
+  name: qualification-broken-plugin
+  namespace: default
+  title: Qualification broken plugin
+  description: >-
+    Test-only package whose artifact does not exist. The qualification installs it
+    through the marketplace to prove that one broken plugin leaves the others loaded
+    and is reported as failed to load.
+spec:
+  packageName: "@veecode-platform/qualification-broken-plugin"
+  dynamicArtifact: oci://quay.io/veecode/qualification-broken-plugin:0.0.0!qualification-broken-plugin
+  version: 0.0.0
+  backstage:
+    role: backend-plugin
+    supportedVersions: 1.52.0
+  author: VeeCode
+  lifecycle: experimental
