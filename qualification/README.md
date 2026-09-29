@@ -52,7 +52,7 @@ The sequence has six steps. After each one it checks that:
 | 2 | Restarts the portal, then backs up every database with `pg_dump`. | loaded | |
 | 3 | Upgrades to the candidate, then installs the broken package through the marketplace. | loaded | The pre-step summary counts every row (`prestep-skip`). |
 | 4 | Restarts the candidate twice. | loaded (`prestep-skip`) | The pre-step skips the broken package (`prestep-skip`). The broken package is in `failedInstalls`, and the good row holds `resolved_digest`, read with psql (`marketplace-backend`). |
-| 5 | Stops the portal, restores the backup, and rolls back to revision 1. Then uninstalls the good plugin. | loaded | The broken package's row is gone. |
+| 5 | Stops the portal, restores the backup, and rolls back to revision 1. Then uninstalls the good plugin. | loaded | The broken package's row is gone, and the good row is stored as disabled. |
 | 6 | Restarts the portal. | absent | |
 
 The good plugin is an OCI package of the index whose reference has no `!` plugin path.
