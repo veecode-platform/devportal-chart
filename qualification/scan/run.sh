@@ -2,15 +2,16 @@
 # Usage: run.sh IMAGE_REF, where IMAGE_REF ends in @sha256:<digest>.
 # Writes OUT/trivy.json (the full report, every severity) and OUT/scan-summary.md.
 #
-#   MODE           report (default) exits 0 whatever the scan finds or does. block exits 1
-#                  on a critical vulnerability with a fix that no live exception covers, on an
-#                  exception file that fails check-ignorefile.sh, and on a scan that did not run.
+#   MODE           report (default) exits 0 whatever the scan finds. block exits 1 on a critical
+#                  vulnerability with a fix that no live exception covers, and on an exception
+#                  file that fails check-ignorefile.sh.
 #   OUT            output directory, default ./scan-out
 #   IGNOREFILE     exception file, default .trivyignore.yaml at the repository root
 #   TRIVY_BIN_DIR  where the pinned Trivy download is kept
 #   TRIVY_REPORT   evaluate this Trivy JSON report instead of scanning
 #
-# Exit 2 is a usage error in either mode.
+# Exit 2 is a usage error. Exit 3 means the scan did not run (Trivy failed or wrote no
+# report); it applies in both modes, so a run cannot pass without a report.
 set -euo pipefail
 
 TRIVY_VERSION=0.74.0
@@ -148,7 +149,7 @@ report_note=
   echo "- Mode: $mode"
   echo "- Exception file: \`${ignorefile#"$root"/}\`, check $ignore_check"
   if [[ -n $scan_error ]]; then
-    echo "- Gate: FAIL, the scan did not complete: $scan_error$report_note"
+    echo "- Gate: FAIL, the scan did not complete: $scan_error"
   else
     jq -r '(.Metadata // {}) as $m
       | (if $m.ImageConfig.architecture then "- Platform: \($m.ImageConfig.os // "linux")/\($m.ImageConfig.architecture)" else empty end),
@@ -191,8 +192,12 @@ report_note=
 } >"$summary"
 cat "$summary"
 
+if [[ -n $scan_error ]]; then
+  echo "run.sh: the scan did not run: $scan_error" >&2
+  exit 3
+fi
 [[ $mode == block ]] || exit 0
-if [[ $ignore_check == FAIL || -n $scan_error || $blocking_count -gt 0 ]]; then
-  echo "run.sh: MODE=block fails (exception check $ignore_check, scan: ${scan_error:-complete}, blocking vulnerabilities $blocking_count)" >&2
+if [[ $ignore_check == FAIL || $blocking_count -gt 0 ]]; then
+  echo "run.sh: MODE=block fails (exception check $ignore_check, blocking vulnerabilities $blocking_count)" >&2
   exit 1
 fi
