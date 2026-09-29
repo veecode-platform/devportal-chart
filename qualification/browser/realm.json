@@ -1,0 +1,48 @@
+{
+  "realm": "rhdh",
+  "enabled": true,
+  "clients": [
+    {
+      "clientId": "rhdh-client",
+      "name": "RHDH Client",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "${KEYCLOAK_CLIENT_SECRET}",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "redirectUris": ["http://localhost:17007/*"],
+      "webOrigins": ["http://localhost:17007"]
+    }
+  ],
+  "groups": [{"name": "developers"}, {"name": "admins"}, {"name": "viewers"}],
+  "users": [
+    {
+      "username": "test1",
+      "email": "test1@example.com",
+      "firstName": "Test",
+      "lastName": "User1",
+      "enabled": true,
+      "emailVerified": true,
+      "groups": ["/developers"],
+      "credentials": [{"type": "password", "value": "${KEYCLOAK_USER_PASSWORD}", "temporary": false}]
+    },
+    {
+      "username": "test2",
+      "email": "no-catalog-entity@example.com",
+      "firstName": "Test",
+      "lastName": "User2",
+      "enabled": true,
+      "emailVerified": true,
+      "groups": ["/developers"],
+      "credentials": [{"type": "password", "value": "${KEYCLOAK_USER_PASSWORD}", "temporary": false}]
+    },
+    {
+      "username": "service-account-rhdh-client",
+      "enabled": true,
+      "serviceAccountClientId": "rhdh-client",
+      "clientRoles": {"realm-management": ["view-users", "query-users", "query-groups", "view-realm"]}
+    }
+  ]
+}

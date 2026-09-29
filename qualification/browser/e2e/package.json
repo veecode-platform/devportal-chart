@@ -1,0 +1,14 @@
+{
+  "name": "devportal-qualification-browser",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "@axe-core/playwright": "4.11.1",
+    "@playwright/test": "1.62.1",
+    "@red-hat-developer-hub/e2e-test-utils": "2.1.19",
+    "@types/node": "24.19.0",
+    "playwright-core": "1.62.1",
+    "typescript": "6.0.2",
+    "yaml": "2.9.1"
+  }
+}
