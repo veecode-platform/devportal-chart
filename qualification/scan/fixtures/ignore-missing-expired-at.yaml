@@ -1,0 +1,3 @@
+vulnerabilities:
+  - id: CVE-2021-44906
+    statement: Fixture. This entry has no expiry.

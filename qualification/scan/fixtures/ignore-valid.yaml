@@ -1,0 +1,4 @@
+vulnerabilities:
+  - id: CVE-2021-44906
+    statement: Fixture. The affected function is not reachable.
+    expired_at: 2099-12-31

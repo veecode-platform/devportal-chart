@@ -1,0 +1,4 @@
+vulnerabilities:
+  - id: CVE-2021-44906
+    statement: Fixture. This exception ran out long ago.
+    expired_at: 2000-01-01
