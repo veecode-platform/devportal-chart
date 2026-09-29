@@ -1,0 +1,61 @@
+# Values the browser runner layers over the chart defaults. The portal answers
+# on a port-forward at http://localhost:17007 and offers guest and OIDC sign-in
+# through the in-cluster Keycloak. run.sh generates every ${...} value and puts
+# it in the veecode-runtime-secrets Secret.
+route:
+  enabled: false
+global:
+  host: localhost
+  dynamic:
+    plugins:
+      - package: ./dynamic-plugins/dist/backstage-community-plugin-catalog-backend-module-keycloak-dynamic
+        disabled: false
+        pluginConfig:
+          catalog:
+            providers:
+              keycloakOrg:
+                default:
+                  baseUrl: http://keycloak:8080
+                  loginRealm: rhdh
+                  realm: rhdh
+                  clientId: rhdh-client
+                  clientSecret: ${KEYCLOAK_CLIENT_SECRET}
+                  schedule:
+                    frequency: {minutes: 1}
+                    initialDelay: {seconds: 15}
+                    timeout: {minutes: 1}
+upstream:
+  backstage:
+    podSecurityContext:
+      fsGroup: 1001
+    appConfig:
+      app:
+        baseUrl: http://localhost:17007
+      backend:
+        baseUrl: http://localhost:17007
+        cors:
+          origin: http://localhost:17007
+      signInPage: oidc
+      # The Learning Paths page reads its links from the /developer-hub proxy, which
+      # upstream's CI points at a test service. Here it serves the image's own data.json.
+      proxy:
+        endpoints:
+          /developer-hub:
+            target: http://localhost:7007
+            pathRewrite:
+              ^/api/proxy/developer-hub/learning-paths$: /learning-paths/data.json
+      auth:
+        session:
+          secret: ${AUTH_SESSION_SECRET}
+        providers:
+          oidc:
+            development:
+              metadataUrl: http://keycloak:8080/realms/rhdh/.well-known/openid-configuration
+              clientId: rhdh-client
+              clientSecret: ${KEYCLOAK_CLIENT_SECRET}
+              prompt: auto
+              callbackUrl: http://localhost:17007/api/auth/oidc/handler/frame
+              sessionDuration: 3days
+              signIn:
+                resolvers:
+                  - resolver: emailLocalPartMatchingUserEntityName
