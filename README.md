@@ -1,7 +1,7 @@
 
 # VeeCode DevPortal Helm chart
 
-This repository contains the VeeCode DevPortal chart: a renamed fork of [redhat-developer/rhdh-chart](https://github.com/redhat-developer/rhdh-chart), pinned at `backstage-7.0.1`. VeeCode defaults are baked into the chart, which is published as `devportal` through the [`next-charts`](https://veecode-platform.github.io/next-charts) channel.
+This repository contains the VeeCode DevPortal Helm chart: a renamed fork of [redhat-developer/rhdh-chart](https://github.com/redhat-developer/rhdh-chart), pinned at `backstage-7.0.1`. VeeCode defaults are baked into the chart, which is published as `devportal` through the [`next-charts`](https://veecode-platform.github.io/next-charts) channel.
 
 ## Install — STAGING
 
