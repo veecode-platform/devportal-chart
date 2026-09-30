@@ -7,6 +7,8 @@ source "$(dirname "$0")/lib.sh"
 
 GOOD_PACKAGE=${GOOD_PACKAGE:-rhdh/backstage-community-plugin-todo-backend}
 GOOD_PLUGIN=${GOOD_PLUGIN:-@backstage-community/plugin-todo-backend-dynamic}
+INJECT_FAILURE=${INJECT_FAILURE:-none}
+FACE_FILE=/opt/app-root/src/dynamic-plugins.veecode.yaml
 VALUES=$HERE/values/sequence.yaml
 FIXTURE_ARTIFACT=$(yq '.spec.dynamicArtifact' "$HERE/fixtures/broken-package.yaml")
 CATALOG_ERRORS='Policy check failed for package:|while validating the entity package:|entity="package:'
@@ -49,6 +51,19 @@ change_package() {
     stored=$(sql backstage_plugin_extensions "select disabled from marketplace_installations where package_name = '$artifact'")
     assert "$step" "the row of $package is stored as disabled" "" "disabled=${stored:-no row}" test "$stored" = t
   fi
+}
+
+check_loaded_plugins() {
+  local tag=$1 step=$2 pod face code=0 detail
+  pod=$(portal_pod)
+  face="kubectl -n $NS exec $pod -c backstage-backend -- cat $FACE_FILE"
+  if [ "$INJECT_FAILURE" = missing-plugin ]; then
+    face="$face; printf '\n  - package: ./dynamic-plugins/dist/injected-missing-plugin\n'"
+  fi
+  FACE_CMD=$face LOGS_CMD="kubectl -n $NS logs $pod -c install-dynamic-plugins" DEVPORTAL_URL=$URL \
+    sh "$LOADED_PLUGINS_CHECK" > "$OUT/loaded-plugins-check-$tag.txt" 2>&1 || code=$?
+  detail=$({ grep -E 'found in API|FAIL' "$OUT/loaded-plugins-check-$tag.txt" || true; } | sed 's/^loaded plugins check: //' | paste -sd ';' -)
+  assert "$step" "every enabled plugin of the product face is loaded" "" "${detail:-no output}" test "$code" -eq 0
 }
 
 check_catalog() {
@@ -135,6 +150,7 @@ observe() {
   [ "$phase" != broken ] || needs=prestep-skip
   found=$(jq --arg n "$GOOD_PLUGIN" '[.[] | select(.name == $n)] | length' "$OUT/loaded-$tag.json")
   assert "$step" "$GOOD_PLUGIN is $good" "$needs" "$(jq length "$OUT/loaded-$tag.json") plugins loaded" test "$found" -eq "$want"
+  check_loaded_plugins "$tag" "$step"
   mode=$(storage_mode "$OUT/backend-$tag.log")
   assert "$step" "the marketplace uses its database" "" "$mode" test "$mode" = database
   check_catalog "$tag" "$step"
@@ -143,6 +159,16 @@ observe() {
   [ "$phase" != broken ] || check_broken_restart "$tag" "$step"
 }
 
+[ -f "${LOADED_PLUGINS_CHECK:-}" ] || fail "set LOADED_PLUGINS_CHECK to scripts/check-loaded-plugins.sh of devportal-local"
+INJECTED=
+case $INJECT_FAILURE in
+  none | failed-sign-in) ;;
+  missing-plugin)
+    GOOD_PLUGIN=$GOOD_PLUGIN-injected-missing
+    INJECTED=" Injected failure: $INJECT_FAILURE, so this run is meant to fail."
+    ;;
+  *) fail "INJECT_FAILURE must be none, missing-plugin or failed-sign-in, got '$INJECT_FAILURE'" ;;
+esac
 if [ -n "${CANDIDATE_VERSION:-}" ]; then
   CANDIDATE_CHART=$(fetch_release "$CANDIDATE_VERSION" "$OUT/candidate")
 fi
@@ -152,7 +178,7 @@ PREV=$(previous_final "$CAND")
 [ -n "$PREV" ] || fail "no final chart older than $CAND in $CHART_INDEX"
 PREVIOUS_CHART=$(fetch_release "$PREV" "$OUT/previous")
 if [ "$SELF_TEST" = true ]; then RUN=self-test; else RUN=full; fi
-summary_header "Candidate devportal $CAND from $CANDIDATE_CHART, previous final chart $PREV, $RUN run. A self-test reports as SKIP each check tagged with a change the candidate may lack: prestep-skip, marketplace-backend or catalog-fixes, described in qualification/README.md."
+summary_header "Candidate devportal $CAND from $CANDIDATE_CHART, previous final chart $PREV, $RUN run.$INJECTED A self-test reports as SKIP each check tagged with a change the candidate may lack: prestep-skip, marketplace-backend or catalog-fixes, described in qualification/README.md."
 
 setup_database
 serve_fixture
