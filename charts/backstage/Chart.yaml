@@ -43,7 +43,7 @@ sources:
 # to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
 # VeeCode owns this chart version independently from the upstream chart version recorded above.
-version: 0.1.25
+version: 0.1.26
 # 0.1.9: the marketplace pre-step sees the operator's appConfig. The init
 #  container's regenerate-extensions-install.js read only the image-baked
 #  app-configs, so `backend.database.prefix` (declared in the deployment's own
@@ -113,4 +113,10 @@ version: 0.1.25
 #  Secret, so a Postgres Service named `pg` (whose service-link PG_PORT is
 #  tcp://<ip>:5432) no longer breaks the marketplace pre-step. appVersion
 #  unchanged: the image stays 3.0.0-beta.9.
-appVersion: 3.0.0-beta.9
+# 0.1.26: image → 3.0.0-beta.10, with tag, digest and appVersion moved together.
+#  The marketplace pre-step skips a row whose digest does not resolve instead of
+#  dropping every selection, pins OCI references that have no plugin selector and
+#  writes one row per plugin, and the baked face pins the marketplace plugins to
+#  their 0.2.0 artifacts. It also carries the RHDH upstream sync up to the commit
+#  before the Backstage 1.53 bump, with install-dynamic-plugins 0.4.1.
+appVersion: 3.0.0-beta.10
