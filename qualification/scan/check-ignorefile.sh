@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
-# Usage: check-ignorefile.sh [FILE]   (default: .trivyignore.yaml at the repository root)
+# Usage: check-ignorefile.sh [FILE [EXPIRED_IDS_OUT]]
+# FILE defaults to .trivyignore.yaml at the repository root. EXPIRED_IDS_OUT, when given, receives
+# the vulnerability ID of each expired entry, one per line, for run.sh to block on.
 set -euo pipefail
 
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
-exec python3 - "${1:-$root/.trivyignore.yaml}" <<'PY'
+exec python3 - "${1:-$root/.trivyignore.yaml}" "${2:-}" <<'PY'
 import datetime
 import sys
 
@@ -13,6 +15,7 @@ except ImportError:
     sys.exit("check-ignorefile: PyYAML is required (pip install pyyaml)")
 
 path = sys.argv[1]
+expired_out = sys.argv[2]
 try:
     with open(path, encoding="utf-8") as f:
         doc = yaml.safe_load(f)
@@ -23,6 +26,7 @@ utc = datetime.timezone.utc
 now = datetime.datetime.now(utc)
 problems = []
 notes = []
+expired_ids = []
 entries = []
 
 if not isinstance(doc, dict):
@@ -58,6 +62,12 @@ for i, entry in enumerate(entries):
         problems.append(f"{where}: expired_at must be an unquoted YAML date such as 2026-12-31, got {expired_at!r}")
     if isinstance(expired_at, datetime.date) and when <= now:
         notes.append(f"{where}: expired on {when:%Y-%m-%d}, so the finding blocks again")
+        if isinstance(entry.get("id"), str) and entry["id"].strip():
+            expired_ids.append(entry["id"].strip())
+
+if expired_out:
+    with open(expired_out, "w", encoding="utf-8") as f:
+        f.writelines(f"{i}\n" for i in expired_ids)
 
 for note in notes:
     print(f"note: {note}")

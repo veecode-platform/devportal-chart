@@ -205,25 +205,44 @@ jobs:
           INJECT_FAILURE: ${{ inputs.inject_failure }}
         run: bash qualification/browser/run.sh
 
-      - name: Scan the candidate image, report only
+      - name: Scan the candidate image
         if: ${{ !cancelled() }}
         env:
           CHART: ${{ steps.candidate.outputs.chart }}
-          MODE: report
+          # A self-test qualifies the qualification, not an image, and a vulnerability database
+          # that updates daily would turn it red for a finding no change of the pull request caused.
+          MODE: ${{ needs.scope.outputs.self_test == 'true' && 'report' || 'block' }}
           OUT: ${{ runner.temp }}/scan
         run: |
           set -euo pipefail
           image=$(helm show values "$CHART" | yq '.upstream.backstage.image | .registry + "/" + .repository + "@" + .digest')
           qualification/scan/run.sh "$image"
 
+      - name: Scan the OCI plugin artifacts the face enables by default, report only
+        if: ${{ !cancelled() }}
+        env:
+          NAMESPACE: qualification-browser
+          RELEASE: devportal
+          OUT: ${{ runner.temp }}/scan/face-defaults
+        run: |
+          set -euo pipefail
+          mkdir -p "$OUT"
+          kubectl -n "$NAMESPACE" exec "deploy/$RELEASE-developer-hub" -c backstage-backend -- \
+            cat /opt/app-root/src/dynamic-plugins.veecode.yaml > "$OUT/dynamic-plugins.veecode.yaml" ||
+            echo "could not read the face file from the portal pod"
+          qualification/scan/face-defaults.sh "$OUT/dynamic-plugins.veecode.yaml"
+
       - name: Write the step summary
         if: always()
         env:
           SCAN_OUT: ${{ runner.temp }}/scan
         run: |
-          if [ -f "$SCAN_OUT/scan-summary.md" ]; then
-            cat "$SCAN_OUT/scan-summary.md" >> "$GITHUB_STEP_SUMMARY"
-          fi
+          for summary in "$SCAN_OUT/scan-summary.md" "$SCAN_OUT/face-defaults/summary.md"; do
+            if [ -f "$summary" ]; then
+              cat "$summary" >> "$GITHUB_STEP_SUMMARY"
+              echo >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done
 
       - name: Upload the browser evidence
         if: always()

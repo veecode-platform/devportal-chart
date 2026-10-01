@@ -1,0 +1,8 @@
+plugins:
+  - package: ./dynamic-plugins/dist/local-plugin
+  - package: oci://example.invalid/plugins/enabled-one@sha256:1111111111111111111111111111111111111111111111111111111111111111!enabled-one
+  - package: oci://example.invalid/plugins/enabled-two@sha256:2222222222222222222222222222222222222222222222222222222222222222!enabled-two
+    disabled: false
+  - package: oci://example.invalid/plugins/disabled-one@sha256:3333333333333333333333333333333333333333333333333333333333333333!disabled-one
+    disabled: true
+  - package: oci://example.invalid/plugins/by-tag:1.0.0!by-tag

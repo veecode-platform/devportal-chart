@@ -5,7 +5,8 @@ checks that it survives what a release puts it through. Two jobs run in parallel
 sequence job checks that the marketplace survives an upgrade from the previous chart, a
 marketplace plugin whose image does not exist, restarts, and a rollback that restores the
 database. The browser job installs the candidate fresh, runs the browser specs, and scans
-its image. A last job, `Qualification`, turns their results into one check.
+its image and the plugin artifacts its product face enables. A last job, `Qualification`, turns
+their results into one check.
 [`qualification.yaml`](../.github/workflows/qualification.yaml) runs it on GitHub Actions.
 It needs no repository secret, so pull requests from forks run it too.
 
@@ -41,7 +42,7 @@ is older than the candidate. Its package is downloaded and checked the same way.
 |---|---|
 | Decide what the run qualifies | Compares the pull request with its base and outputs whether to run and whether the run is a self-test. A dispatch always runs. |
 | Sequence on KinD | Runs `sequence.sh`, described below. Uploads `qualification-sequence`, which holds the summary table, the logs, and the API responses of every step. |
-| Browser on KinD | Runs `browser/run.sh`, then scans the candidate's image. Uploads `qualification-browser` (the Playwright report, traces, screenshots, and the cluster logs) and `qualification-scan` (`trivy.json` and `scan-summary.md`). |
+| Browser on KinD | Runs `browser/run.sh`, then runs the two vulnerability scans below. Uploads `qualification-browser` (the Playwright report, traces, screenshots, and the cluster logs) and `qualification-scan` (`trivy.json` and `scan-summary.md` of the image, and `face-defaults/` with one report per plugin artifact). |
 | Qualification | Passes only when every job the run decided on succeeded. |
 
 ## What the sequence asserts
@@ -98,6 +99,11 @@ A check tagged with one of these names needs a change the candidate may lack:
 A self-test reports each tagged check as SKIP with what it observed, never as PASS.
 A full run treats them like every other check.
 
+The image scan has no tag. A self-test qualifies the qualification, not an image, so its
+scan runs in report mode; a fresh vulnerability in the pinned image would otherwise turn a
+pull request red that changed nothing about it. A run that qualifies a candidate (a pull
+request that changes the pinned image, or a dispatch without `self_test`) blocks.
+
 ## The broken package
 
 `fixtures/broken-package.yaml` is a `Package` entity whose `dynamicArtifact` points at
@@ -114,10 +120,47 @@ PostgreSQL and a Keycloak whose realm and users the run creates. It then runs th
 `browser/e2e`, adapted from redhat-developer/rhdh, which sign in as a guest and through
 Keycloak with the upstream library's `LoginHelper`. The exit code of `run.sh` is the result.
 
-The scan follows the specs and runs even when they fail. `scan/run.sh` scans the candidate's
-image, which the chart pins by digest, with Trivy in report mode. The full report goes to
-`qualification-scan` and the counts by severity to the job summary. Findings never fail the
-job, but a scan that did not run does, so no run passes without the report.
+The two scans follow the specs and run even when they fail.
+
+## The vulnerability scans
+
+**The image scan** (`scan/run.sh`) scans the candidate's image, which the chart pins by digest,
+with Trivy at the version and checksum pinned in `run.sh`. One scan produces the full report,
+every severity, in `qualification-scan`, and the counts by severity go to the job summary. The
+job fails on:
+
+- a critical vulnerability with a fix that no live exception covers, the rule of
+  `--severity CRITICAL --ignore-unfixed --exit-code 1`;
+- a finding whose exception has expired, whatever its severity or fix status. Trivy drops an
+  expired entry before it matches, so the finding comes back at its own severity and a high
+  would pass. `check-ignorefile.sh` lists the IDs of the expired entries and `run.sh` blocks on
+  every finding with one of them. The match is by ID alone: an entry's `paths` and `purls`
+  are not considered, which errs on the side of blocking. An expired entry with no finding
+  blocks nothing;
+- an exception file that fails `check-ignorefile.sh`, because Trivy treats `statement` and
+  `expired_at` as optional;
+- a scan that did not run, so no run passes without the report.
+
+`MODE=report` runs the same scan and exits 0 whatever it finds; only a scan that did not run
+still fails. The exceptions live in
+[`.trivyignore.yaml`](../.trivyignore.yaml), which explains the fields.
+
+**The face-default scan** (`scan/face-defaults.sh`) scans the plugin artifacts that leave the
+image. It reads the product face, `/opt/app-root/src/dynamic-plugins.veecode.yaml`, from the
+running portal pod, takes every `oci://` entry that is not `disabled: true`, and runs `run.sh` in
+report mode on each one by digest, with no exceptions. The face file is the source, not the
+installer's log, because the log also names the plugins the marketplace installed and follows the
+installer's wording. The step takes no count from the face: whatever it enables is scanned.
+
+It writes `face-defaults/summary.md`, a table with one row per artifact that goes to the job
+summary, and the `trivy.json` and `scan-summary.md` of each artifact next to it. The step never
+fails the job, not on a finding and not on an artifact it could not scan; the row says what
+happened. An entry without a digest is listed and not scanned.
+
+An artifact is an OCI image whose layer holds the plugin's `package.json`, and `node_modules`
+for a backend plugin. Trivy parses those as Node packages, and the `Packages` column counts
+them: 1 is the plugin's own `package.json`, and a row reads "no packages found" when Trivy
+parsed none. Code bundled into a frontend plugin's files is not visible to Trivy.
 
 ## The Qualification job
 
@@ -152,6 +195,9 @@ The run must go red, and only the job that the value breaks. A dispatch's concur
 group holds its ref, `chart_version`, `self_test` and `inject_failure`, so an injected run,
 a self-test and a full run of the same version never cancel each other.
 
+The scan needs no injection: a dispatch without `self_test` of a chart whose image has a
+critical vulnerability with a fix goes red on the image scan step, and on nothing else.
+
 ## Run it on another cluster
 
 `sequence.sh` drives the cluster that `kubectl` reaches. It needs `kubectl`, `helm`,
@@ -178,4 +224,5 @@ it to the job summary and uploads `OUT` as the `qualification-sequence` artifact
 `OUT` from the environment, and `INJECT_FAILURE` as above. It needs `kubectl`, `helm`,
 `openssl`, Node.js 24, and root or `sudo` for `npx playwright install --with-deps`.
 `scan/run.sh IMAGE_REF` needs `jq`, `curl`, and `python3` with PyYAML; `MODE=report`
-is its default.
+is its default. `scan/face-defaults.sh FACE_FILE` needs the same plus `yq` 4.
+`scan/test.sh` checks both against fixtures, with no Trivy, no network and no image.

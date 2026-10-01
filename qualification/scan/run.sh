@@ -3,12 +3,14 @@
 # Writes OUT/trivy.json (the full report, every severity) and OUT/scan-summary.md.
 #
 #   MODE           report (default) exits 0 whatever the scan finds. block exits 1 on a critical
-#                  vulnerability with a fix that no live exception covers, and on an exception
-#                  file that fails check-ignorefile.sh.
+#                  vulnerability with a fix that no live exception covers, on a finding of any
+#                  severity whose exception has expired, and on an exception file that fails
+#                  check-ignorefile.sh.
 #   OUT            output directory, default ./scan-out
 #   IGNOREFILE     exception file, default .trivyignore.yaml at the repository root
 #   TRIVY_BIN_DIR  where the pinned Trivy download is kept
 #   TRIVY_REPORT   evaluate this Trivy JSON report of IMAGE_REF instead of scanning
+#   LIST_ALL_PKGS  true makes Trivy list every package it parsed, so the report shows what was covered
 #
 # Exit 2 is a usage error. Exit 3 means the scan did not run (Trivy failed or wrote no
 # report); it applies in both modes, so a run cannot pass without a report.
@@ -51,12 +53,19 @@ rm -f "$report"
 # "fixed". That is what --severity CRITICAL --ignore-unfixed keeps. Findings
 # hidden by a live exception are not in .Vulnerabilities; --show-suppressed
 # moves them to .ExperimentalModifiedFindings, and Trivy drops an expired
-# exception before it matches, so that finding stays in .Vulnerabilities.
+# exception before it matches, so that finding stays in .Vulnerabilities at
+# its own severity. It is blocking too, matched by ID against the expired
+# entries that check-ignorefile.sh lists.
 jq_defs=$(
   cat <<'JQ'
 def vulns: [(.Results // [])[] | . as $r | (.Vulnerabilities // [])[] | . + {Location: (if $r.Class == "os-pkgs" then "OS packages" else (.PkgPath // $r.Target) end)}];
 def suppressed: [(.Results // [])[] | (.ExperimentalModifiedFindings // [])[] | select(.Type == "vulnerability") | .Finding];
-def blocking: vulns | map(select(.Severity == "CRITICAL" and .Status == "fixed"));
+def critical_with_fix: .Severity == "CRITICAL" and .Status == "fixed";
+def expired_exception($expired): .VulnerabilityID as $id | $expired | any(. == $id);
+def blocking($expired): vulns | map(
+  . + {Why: ([(if critical_with_fix then "critical with a fix" else empty end),
+              (if expired_exception($expired) then "exception expired" else empty end)] | join(", "))}
+  | select(.Why != ""));
 JQ
 )
 
@@ -98,6 +107,8 @@ find_trivy() {
   echo "$dir/trivy"
 }
 
+list_pkgs=()
+[[ ${LIST_ALL_PKGS:-false} == true ]] && list_pkgs+=(--list-all-pkgs)
 scan_error=
 scan_seconds=
 scanner="not run, the report was supplied with TRIVY_REPORT"
@@ -113,6 +124,7 @@ scan() {
     --image-src remote --scanners vuln --timeout 10m \
     --no-progress --skip-version-check \
     --format json --output "$report" \
+    "${list_pkgs[@]}" \
     --ignorefile "$ignorefile" --show-suppressed \
     "$image" || {
     scan_error="Trivy exited with an error"
@@ -123,8 +135,11 @@ scan() {
   scanner="Trivy $TRIVY_VERSION, vulnerability database updated $db_updated"
 }
 
+expired_file=$out/expired-ids.txt
+: >"$expired_file"
 ignore_check=PASS
-"$here/check-ignorefile.sh" "$ignorefile" || ignore_check=FAIL
+"$here/check-ignorefile.sh" "$ignorefile" "$expired_file" || ignore_check=FAIL
+expired_ids=$(jq -Rn '[inputs | select(. != "")]' <"$expired_file")
 
 if [[ -n ${TRIVY_REPORT:-} ]]; then
   cp "$TRIVY_REPORT" "$report"
@@ -138,7 +153,7 @@ fi
 
 blocking_count=0
 if [[ -z $scan_error ]]; then
-  blocking_count=$(jq -r "$jq_defs blocking | length" "$report")
+  blocking_count=$(jq -r --argjson expired "$expired_ids" "$jq_defs blocking(\$expired) | length" "$report")
 fi
 
 report_note=
@@ -158,7 +173,9 @@ report_note=
     jq -r '(.Metadata // {}) as $m
       | (if $m.ImageConfig.architecture then "- Platform: \($m.ImageConfig.os // "linux")/\($m.ImageConfig.architecture)" else empty end),
         (if $m.OS then "- Base OS: \($m.OS.Family) \($m.OS.Name)" else empty end)' "$report"
-    echo "- Critical vulnerabilities with a fix and no live exception: $blocking_count"
+    jq -r --argjson expired "$expired_ids" "$jq_defs"'
+      "- Critical vulnerabilities with a fix and no live exception: \(vulns | map(select(critical_with_fix)) | length)",
+      "- Findings that match an expired exception: \(vulns | map(select(expired_exception($expired))) | length)"' "$report"
     if [[ $blocking_count -eq 0 && $ignore_check == PASS ]]; then gate=PASS; else gate=FAIL; fi
     echo "- Gate: $gate$report_note"
     echo
@@ -173,13 +190,13 @@ report_note=
       "| Total | \(vulns | length) | \(vulns | map(select(.Status == "fixed")) | length) | \(suppressed | length) |"' "$report"
     if ((blocking_count > 0)); then
       echo
-      echo "## Critical vulnerabilities with a fix"
+      echo "## Blocking vulnerabilities"
       echo
-      echo "| ID | Package | Installed | Fixed in | Location |"
-      echo "| --- | --- | --- | --- | --- |"
-      jq -r "$jq_defs"'
-        blocking | sort_by(.PkgName, .VulnerabilityID)[]
-        | "| \(.VulnerabilityID) | \(.PkgName) | \(.InstalledVersion) | \(.FixedVersion) | \(.Location) |"' "$report"
+      echo "| ID | Package | Severity | Installed | Fixed in | Location | Why |"
+      echo "| --- | --- | --- | --- | --- | --- | --- |"
+      jq -r --argjson expired "$expired_ids" "$jq_defs"'
+        blocking($expired) | sort_by(.PkgName, .VulnerabilityID)[]
+        | "| \(.VulnerabilityID) | \(.PkgName) | \(.Severity) | \(.InstalledVersion) | \(.FixedVersion // "none") | \(.Location) | \(.Why) |"' "$report"
     fi
     if [[ $(jq -r "$jq_defs suppressed | length" "$report") -gt 0 ]]; then
       echo
