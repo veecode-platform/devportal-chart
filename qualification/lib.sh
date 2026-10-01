@@ -10,8 +10,8 @@ OUT=${OUT:-/tmp/qualification}
 SELF_TEST=${SELF_TEST:-false}
 PORT=${PORT:-17007}
 URL=http://localhost:$PORT
-CHART_INDEX=https://veecode-platform.github.io/next-charts/index.yaml
-RELEASES=https://github.com/veecode-platform/devportal-chart/releases/download
+CHART_INDEX=${CHART_INDEX:-https://veecode-platform.github.io/next-charts/index.yaml}
+RELEASES=${RELEASES:-https://github.com/veecode-platform/devportal-chart/releases/download}
 POSTGRES_IMAGE=docker.io/library/postgres:16
 FIXTURES_IMAGE=registry.k8s.io/e2e-test-images/busybox:1.36.1-1@sha256:a9155b13325b2abef48e71de77bb8ac015412a566829f621d06bfae5c699b1b9
 FIXTURE_PACKAGE=default/qualification-broken-plugin
@@ -49,6 +49,28 @@ elapsed() {
 summary_header() {
   printf '%s\n\n| Step | Elapsed | Check | Result | Detail |\n|---|---|---|---|---|\n' "$1" >> "$OUT/summary.md"
   HEADER=true
+}
+
+write_qualification_manifest() {
+  local image_ref=$1 chart_version=$2 chart_sha256=$3 catalog_index_ref=$4
+  local image_digest catalog_index_digest
+  [[ $image_ref =~ @sha256:[a-f0-9]{64}$ ]] || fail "portal image is not pinned by a sha256 digest: $image_ref"
+  [[ -n $catalog_index_ref ]] || fail "catalog index reference is empty"
+  [[ $chart_version =~ ^[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$ ]] || fail "invalid qualified chart version: $chart_version"
+  [[ $chart_sha256 =~ ^[a-f0-9]{64}$ ]] || fail "invalid chart package sha256: $chart_sha256"
+  image_digest=${image_ref##*@}
+  catalog_index_digest=$(skopeo inspect --no-creds --format '{{.Digest}}' "docker://$catalog_index_ref") ||
+    fail "could not resolve catalog index tag to a sha256 digest: $catalog_index_ref"
+  [[ $catalog_index_digest =~ ^sha256:[a-f0-9]{64}$ ]] ||
+    fail "catalog index tag returned an invalid sha256 digest: $catalog_index_digest"
+  jq -n \
+    --arg image_digest "$image_digest" \
+    --arg chart_version "$chart_version" \
+    --arg chart_package_sha256 "$chart_sha256" \
+    --arg catalog_index_digest "$catalog_index_digest" \
+    --arg catalog_index_ref "$catalog_index_ref" \
+    '{image_digest: $image_digest, chart_version: $chart_version, chart_package_sha256: $chart_package_sha256, catalog_index_digest: $catalog_index_digest, catalog_index_ref: $catalog_index_ref}' \
+    > "$OUT/qualification-manifest.json"
 }
 
 # NEEDS tags a check with the change it depends on, as listed in README.md.
@@ -90,7 +112,7 @@ chart_field() { helm show chart "$1" | yq ".$2"; }
 # The same download and checks next-charts runs before it indexes a package.
 fetch_release() {
   local version=$1 dir=$2 package
-  [[ $version =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || fail "chart version must be x.y.z, got '$version'"
+  [[ $version =~ ^[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$ ]] || fail "chart version must be x.y.z or x.y.z-rc.N, got '$version'"
   package=devportal-$version.tgz
   mkdir -p "$dir"
   retry curl --fail --location --silent --show-error "$RELEASES/chart-v$version/$package" --output "$dir/$package"
@@ -102,14 +124,15 @@ fetch_release() {
 }
 
 previous_final() {
-  local candidate=$1 v prev=
+  local candidate=$1 cutoff=$1 v prev=
+  [[ $candidate == *-rc.* ]] && cutoff=${candidate%%-rc.*}
   retry curl --fail --location --silent --show-error "$CHART_INDEX" --output "$OUT/chart-index.yaml"
   while read -r v; do
-    [ "$v" = "$candidate" ] && break
+    [ "$v" = "$cutoff" ] && break
     prev=$v
   done < <({
     yq '.entries.devportal[].version' "$OUT/chart-index.yaml" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$'
-    echo "$candidate"
+    echo "$cutoff"
   } | sort -V -u)
   echo "$prev"
 }

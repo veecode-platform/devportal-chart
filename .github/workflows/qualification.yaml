@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       chart_version:
-        description: Published devportal chart version to qualify, for example 0.1.25
+        description: Published devportal chart version to qualify, as x.y.z or x.y.z-rc.N (for example 1.0.0-rc.1)
         required: true
         type: string
       self_test:
@@ -139,6 +139,11 @@ jobs:
         run: |
           if [ -f /tmp/qualification/summary.md ]; then
             cat /tmp/qualification/summary.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ -f /tmp/qualification/qualification-manifest.json ]; then
+            printf '\n## Qualified candidate manifest\n\n```json\n' >> "$GITHUB_STEP_SUMMARY"
+            jq . /tmp/qualification/qualification-manifest.json >> "$GITHUB_STEP_SUMMARY"
+            printf '```\n' >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Upload the sequence evidence

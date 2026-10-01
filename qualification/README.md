@@ -10,6 +10,24 @@ their results into one check.
 [`qualification.yaml`](../.github/workflows/qualification.yaml) runs it on GitHub Actions.
 It needs no repository secret, so pull requests from forks run it too.
 
+## Candidate manifest
+
+The `qualification-sequence` artifact contains `qualification-manifest.json` beside `summary.md`. After the sequence finishes, the workflow appends that manifest to its step summary below the complete results table. The manifest records the candidate package, the portal image digest, and the catalog-index reference and digest resolved after the candidate portal is ready.
+
+Keep these JSON keys stable because the release gate compares manifests from the candidate and final qualifications:
+
+| Key | Value |
+|---|---|
+| `image_digest` | `sha256:` digest of the running `backstage-backend` image. |
+| `chart_version` | Version embedded in the qualified chart package, including an optional `-rc.N` suffix. |
+| `chart_package_sha256` | Lowercase hexadecimal SHA-256 checksum of the exact chart `.tgz` package. |
+| `catalog_index_digest` | `sha256:` digest resolved from the catalog-index reference with `skopeo inspect`. |
+| `catalog_index_ref` | Exact `CATALOG_INDEX_IMAGE` value from the deployment, usually a moving tag. |
+
+For pull requests, the sequence packages the chart directory before installing it so the recorded checksum identifies the package used by Helm. For dispatches, `fetch_release` verifies the published package against its release checksum before writing the manifest.
+
+Run `qualification/test-release-helpers.sh` for the release version and checksum fixtures. The tests use local `file://` inputs and do not dispatch the full qualification.
+
 ## Run it
 
 The workflow runs on every pull request against `main`, and its first job decides what the
@@ -34,7 +52,9 @@ the checksum before they install anything, as the next-charts ingest does.
 
 The previous chart is the newest final `x.y.z` version in the
 [next-charts index](https://veecode-platform.github.io/next-charts/index.yaml) that
-is older than the candidate. Its package is downloaded and checked the same way.
+is older than the candidate. For an `x.y.z-rc.N` candidate, the final `x.y.z`
+release is the exclusive upper bound, so the sequence cannot select a final
+release newer than the candidate. Its package is downloaded and checked the same way.
 
 ## The jobs
 

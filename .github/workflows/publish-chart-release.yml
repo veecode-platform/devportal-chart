@@ -118,10 +118,15 @@ jobs:
               "${CHECKSUM_PATH}" \
               --repo "${GITHUB_REPOSITORY}"
           else
+            release_flags=()
+            if [[ "${CHART_VERSION}" == *-* ]]; then
+              release_flags=(--prerelease --latest=false)
+            fi
             gh release create "${TAG}" \
               "${PACKAGE_PATH}" \
               "${CHECKSUM_PATH}" \
               --repo "${GITHUB_REPOSITORY}" \
               --title "${TAG}" \
-              --notes "Helm chart devportal ${CHART_VERSION}."
+              --notes "Helm chart devportal ${CHART_VERSION}." \
+              "${release_flags[@]}"
           fi
