@@ -28,6 +28,15 @@ portal_image() {
   yq '.upstream.backstage.image | .registry + "/" + .repository + "@" + .digest' "$OUT/values-$2.yaml"
 }
 
+record_candidate_manifest() {
+  local deployment portal_image_ref catalog_index_ref chart_package_sha256
+  deployment=$("${K[@]}" get deploy "$DEPLOY" -o json)
+  portal_image_ref=$(jq -r '.spec.template.spec.containers[] | select(.name == "backstage-backend") | .image' <<< "$deployment")
+  catalog_index_ref=$(jq -r '.spec.template.spec.initContainers[] | select(.name == "install-dynamic-plugins") | .env[] | select(.name == "CATALOG_INDEX_IMAGE") | .value' <<< "$deployment")
+  chart_package_sha256=$(sha256sum "$CANDIDATE_CHART" | awk '{print $1}')
+  write_qualification_manifest "$portal_image_ref" "$CAND" "$chart_package_sha256" "$catalog_index_ref"
+}
+
 storage_mode() {
   if grep -qF 'falling back to file storage' "$1"; then
     echo "file fallback"
@@ -173,6 +182,12 @@ if [ -n "${CANDIDATE_VERSION:-}" ]; then
   CANDIDATE_CHART=$(fetch_release "$CANDIDATE_VERSION" "$OUT/candidate")
 fi
 [ -n "${CANDIDATE_CHART:-}" ] || fail "set CANDIDATE_CHART to a chart directory or package, or CANDIDATE_VERSION to a published version"
+if [ -d "$CANDIDATE_CHART" ]; then
+  CAND=$(chart_field "$CANDIDATE_CHART" version)
+  mkdir -p "$OUT/candidate-package"
+  helm package "$CANDIDATE_CHART" --destination "$OUT/candidate-package" > "$OUT/candidate-package.log" 2>&1 || fail "could not package the candidate chart"
+  CANDIDATE_CHART="$OUT/candidate-package/devportal-$CAND.tgz"
+fi
 CAND=$(chart_field "$CANDIDATE_CHART" version)
 PREV=$(previous_final "$CAND")
 [ -n "$PREV" ] || fail "no final chart older than $CAND in $CHART_INDEX"
@@ -206,6 +221,7 @@ log "$S3"
 node_pull "$(portal_image "$CANDIDATE_CHART" candidate)"
 helm upgrade "$RELEASE" "$CANDIDATE_CHART" -n "$NS" -f "$VALUES" --timeout 20m > "$OUT/helm-upgrade.log" 2>&1
 wait_portal upgrade
+record_candidate_manifest
 observe s3 "$S3" loaded candidate
 change_package "$S3" "$FIXTURE_PACKAGE" "$FIXTURE_ARTIFACT" false s3-install
 
