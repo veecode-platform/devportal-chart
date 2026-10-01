@@ -12,16 +12,17 @@ It needs no repository secret, so pull requests from forks run it too.
 
 ## Candidate manifest
 
-The `qualification-sequence` artifact contains `qualification-manifest.json` beside `summary.md`. The workflow also prints the manifest in its step summary. It records the exact candidate package and the digests observed from the deployment after the candidate upgrade.
+The `qualification-sequence` artifact contains `qualification-manifest.json` beside `summary.md`. After the sequence finishes, the workflow appends that manifest to its step summary below the complete results table. The manifest records the candidate package, the portal image digest, and the catalog-index reference and digest resolved after the candidate portal is ready.
 
-Keep these JSON keys stable because gate G compares manifests from the candidate and final qualifications:
+Keep these JSON keys stable because the release gate compares manifests from the candidate and final qualifications:
 
 | Key | Value |
 |---|---|
 | `image_digest` | `sha256:` digest of the running `backstage-backend` image. |
 | `chart_version` | Version embedded in the qualified chart package, including an optional `-rc.N` suffix. |
 | `chart_package_sha256` | Lowercase hexadecimal SHA-256 checksum of the exact chart `.tgz` package. |
-| `catalog_index_digest` | `sha256:` digest from `CATALOG_INDEX_IMAGE` in the deployment. |
+| `catalog_index_digest` | `sha256:` digest resolved from the catalog-index reference with `skopeo inspect`. |
+| `catalog_index_ref` | Exact `CATALOG_INDEX_IMAGE` value from the deployment, usually a moving tag. |
 
 For pull requests, the sequence packages the chart directory before installing it so the recorded checksum identifies the package used by Helm. For dispatches, `fetch_release` verifies the published package against its release checksum before writing the manifest.
 

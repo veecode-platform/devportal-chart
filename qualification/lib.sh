@@ -55,23 +55,22 @@ write_qualification_manifest() {
   local image_ref=$1 chart_version=$2 chart_sha256=$3 catalog_index_ref=$4
   local image_digest catalog_index_digest
   [[ $image_ref =~ @sha256:[a-f0-9]{64}$ ]] || fail "portal image is not pinned by a sha256 digest: $image_ref"
-  [[ $catalog_index_ref =~ @sha256:[a-f0-9]{64}$ ]] || fail "catalog index is not pinned by a sha256 digest: $catalog_index_ref"
+  [[ -n $catalog_index_ref ]] || fail "catalog index reference is empty"
   [[ $chart_version =~ ^[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$ ]] || fail "invalid qualified chart version: $chart_version"
   [[ $chart_sha256 =~ ^[a-f0-9]{64}$ ]] || fail "invalid chart package sha256: $chart_sha256"
   image_digest=${image_ref##*@}
-  catalog_index_digest=${catalog_index_ref##*@}
+  catalog_index_digest=$(skopeo inspect --no-creds --format '{{.Digest}}' "docker://$catalog_index_ref") ||
+    fail "could not resolve catalog index tag to a sha256 digest: $catalog_index_ref"
+  [[ $catalog_index_digest =~ ^sha256:[a-f0-9]{64}$ ]] ||
+    fail "catalog index tag returned an invalid sha256 digest: $catalog_index_digest"
   jq -n \
     --arg image_digest "$image_digest" \
     --arg chart_version "$chart_version" \
     --arg chart_package_sha256 "$chart_sha256" \
     --arg catalog_index_digest "$catalog_index_digest" \
-    '{image_digest: $image_digest, chart_version: $chart_version, chart_package_sha256: $chart_package_sha256, catalog_index_digest: $catalog_index_digest}' \
+    --arg catalog_index_ref "$catalog_index_ref" \
+    '{image_digest: $image_digest, chart_version: $chart_version, chart_package_sha256: $chart_package_sha256, catalog_index_digest: $catalog_index_digest, catalog_index_ref: $catalog_index_ref}' \
     > "$OUT/qualification-manifest.json"
-  {
-    printf '\n## Qualified candidate manifest\n\n```json\n'
-    jq . "$OUT/qualification-manifest.json"
-    printf '```\n'
-  } >> "$OUT/summary.md"
 }
 
 # NEEDS tags a check with the change it depends on, as listed in README.md.

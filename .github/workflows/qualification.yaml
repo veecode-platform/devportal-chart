@@ -140,6 +140,11 @@ jobs:
           if [ -f /tmp/qualification/summary.md ]; then
             cat /tmp/qualification/summary.md >> "$GITHUB_STEP_SUMMARY"
           fi
+          if [ -f /tmp/qualification/qualification-manifest.json ]; then
+            printf '\n## Qualified candidate manifest\n\n```json\n' >> "$GITHUB_STEP_SUMMARY"
+            jq . /tmp/qualification/qualification-manifest.json >> "$GITHUB_STEP_SUMMARY"
+            printf '```\n' >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Upload the sequence evidence
         if: always()
