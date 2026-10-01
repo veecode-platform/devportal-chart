@@ -74,6 +74,7 @@ is not listed here is eligible to disappear during the next upstream resync.
 | qualification/scan/check-ignorefile.sh | Fails when an exception lacks a statement or a valid expiry, because Trivy treats both fields as optional, and lists the IDs of the expired entries for run.sh. | New VeeCode script; RHDH has no equivalent. |
 | qualification/scan/test.sh, qualification/scan/fixtures/ | Run the exception check, the scan gate and the face-default scan against fixture files and a stub Trivy, with no network and no image. | New VeeCode test; RHDH has no equivalent. |
 | qualification/scan/face-defaults.sh | Reads the product face from the running portal, scans by digest each OCI plugin artifact it enables with run.sh in report mode, and writes one report per artifact plus a summary table. It never fails the run. | New VeeCode script; RHDH scans in its internal pipeline, so there is nothing to copy. |
+| docs/product-face-overrides.md | Documents the product face's OCI refs and the customer override syntax. | VeeCode product guide; refresh its refs from devportal-core when face pins change. |
 | docs/upstream-drift.md | Records this fork's drift and resync discipline. | Must be updated whenever the table changes. |
 | ct-install.yaml | Drops `--debug` from `helm-extra-args`. With it, helm prints every rendered manifest, including the base64 branding logo, and ct fails with `signal: broken pipe` after a successful install. | The action still adds `--debug` when the job runs with runner debug on. |
 
