@@ -68,43 +68,49 @@ vulnerabilities:
     expired_at: 2026-12-30
   - id: CVE-2025-66418
     statement: >-
-      urllib3 2.2.2 remains in the 3.0.0 image because python/requirements.in pins
-      urllib3==2.2.2, so pip-tools cannot compile the update to 2.6.0 while that
-      pin remains. Update the input pin to 2.6.0 or later. The hatchling and
+      urllib3 2.2.2 remains in the 3.0.0 image because python/requirements.in and
+      python/requirements-build.in both pin urllib3==2.2.2, so pip-tools cannot
+      compile the update to 2.6.0 while those pins remain. Update both input pins
+      to 2.6.0 or later. The hatchling and
       setuptools-scm build-tool pins may also need raising; this was not tested.
     expired_at: 2026-12-30
   - id: CVE-2025-66471
     statement: >-
-      urllib3 2.2.2 remains in the 3.0.0 image because python/requirements.in pins
-      urllib3==2.2.2, so pip-tools cannot compile the update to 2.6.0 while that
-      pin remains. Update the input pin to 2.6.0 or later. The hatchling and
+      urllib3 2.2.2 remains in the 3.0.0 image because python/requirements.in and
+      python/requirements-build.in both pin urllib3==2.2.2, so pip-tools cannot
+      compile the update to 2.6.0 while those pins remain. Update both input pins
+      to 2.6.0 or later. The hatchling and
       setuptools-scm build-tool pins may also need raising; this was not tested.
     expired_at: 2026-12-30
   - id: CVE-2026-21441
     statement: >-
-      urllib3 2.2.2 remains in the 3.0.0 image because python/requirements.in pins
-      urllib3==2.2.2, so pip-tools cannot compile the update to 2.6.3 while that
-      pin remains. Update the input pin to 2.6.3 or later. The hatchling and
+      urllib3 2.2.2 remains in the 3.0.0 image because python/requirements.in and
+      python/requirements-build.in both pin urllib3==2.2.2, so pip-tools cannot
+      compile the update to 2.6.3 while those pins remain. Update both input pins
+      to 2.6.3 or later. The hatchling and
       setuptools-scm build-tool pins may also need raising; this was not tested.
     expired_at: 2026-12-30
   - id: CVE-2026-44431
     statement: >-
-      urllib3 2.2.2 remains in the 3.0.0 image because python/requirements.in pins
-      urllib3==2.2.2, so pip-tools cannot compile the update to 2.7.0 while that
-      pin remains. Update the input pin to 2.7.0 or later. The hatchling and
+      urllib3 2.2.2 remains in the 3.0.0 image because python/requirements.in and
+      python/requirements-build.in both pin urllib3==2.2.2, so pip-tools cannot
+      compile the update to 2.7.0 while those pins remain. Update both input pins
+      to 2.7.0 or later. The hatchling and
       setuptools-scm build-tool pins may also need raising; this was not tested.
     expired_at: 2026-12-30
   - id: CVE-2026-97687
     statement: >-
-      urllib3 2.2.2 remains in the 3.0.0 image because python/requirements.in pins
-      urllib3==2.2.2, so pip-tools cannot compile the update to 2.8.0 while that
-      pin remains. Update the input pin to 2.8.0 or later. The hatchling and
+      urllib3 2.2.2 remains in the 3.0.0 image because python/requirements.in and
+      python/requirements-build.in both pin urllib3==2.2.2, so pip-tools cannot
+      compile the update to 2.8.0 while those pins remain. Update both input pins
+      to 2.8.0 or later. The hatchling and
       setuptools-scm build-tool pins may also need raising; this was not tested.
     expired_at: 2026-12-30
   - id: CVE-2026-97689
     statement: >-
-      urllib3 2.2.2 remains in the 3.0.0 image because python/requirements.in pins
-      urllib3==2.2.2, so pip-tools cannot compile the update to 2.8.0 while that
-      pin remains. Update the input pin to 2.8.0 or later. The hatchling and
+      urllib3 2.2.2 remains in the 3.0.0 image because python/requirements.in and
+      python/requirements-build.in both pin urllib3==2.2.2, so pip-tools cannot
+      compile the update to 2.8.0 while those pins remain. Update both input pins
+      to 2.8.0 or later. The hatchling and
       setuptools-scm build-tool pins may also need raising; this was not tested.
     expired_at: 2026-12-30
