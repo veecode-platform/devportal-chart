@@ -20,4 +20,91 @@
 #   - id: CVE-2099-0001
 #     statement: Not reachable from the portal; fixed by the next base image.
 #     expired_at: 2099-01-31
-vulnerabilities: []
+vulnerabilities:
+  - id: CVE-2026-82659
+    statement: >-
+      nodemailer 8.0.11 remains in the 3.0.0 image because this fix requires a
+      major update to 9.0.1. Update nodemailer to 9.0.1 or later.
+    expired_at: 2026-12-30
+  - id: GHSA-2x7j-588g-ccc2
+    statement: >-
+      nodemailer 8.0.11 remains in the 3.0.0 image because this fix requires a
+      major update to 9.1.0. Update nodemailer to 9.1.0 or later.
+    expired_at: 2026-12-30
+  - id: GHSA-v53p-9fqp-m79j
+    statement: >-
+      nodemailer 8.0.11 remains in the 3.0.0 image because this fix requires a
+      major update to 10.0.6. Update nodemailer to 10.0.6 or later.
+    expired_at: 2026-12-30
+  - id: CVE-2026-67422
+    statement: >-
+      pymdown-extensions 10.19.1 remains in the 3.0.0 image because the fix
+      requires a major update to 11.0.1. Update pymdown-extensions to 11.0.1
+      or later.
+    expired_at: 2026-12-30
+  - id: CVE-2026-12151
+    statement: >-
+      undici 5.29.0 remains in the 3.0.0 image because its fixes require a
+      major update to 6.27.0, 7.28.0, or 8.5.0. Move to a compatible fixed
+      major version.
+    expired_at: 2026-12-30
+  - id: CVE-2026-1526
+    statement: >-
+      undici 5.29.0 remains in the 3.0.0 image because its fixes require a
+      major update to 6.24.0 or 7.24.0. Move to a compatible fixed major
+      version.
+    expired_at: 2026-12-30
+  - id: CVE-2026-2229
+    statement: >-
+      undici 5.29.0 remains in the 3.0.0 image because its fixes require a
+      major update to 6.24.0 or 7.24.0. Move to a compatible fixed major
+      version.
+    expired_at: 2026-12-30
+  - id: CVE-2026-55553
+    statement: >-
+      urllib 3.27.3 remains in the 3.0.0 image because the 4.9.1 fix is a major
+      update and 2.44.1 would downgrade the installed version. Update urllib to
+      a compatible fixed release.
+    expired_at: 2026-12-30
+  - id: CVE-2025-66418
+    statement: >-
+      urllib3 2.2.2 remains in the 3.0.0 image because python/requirements.in pins
+      urllib3==2.2.2, so pip-tools cannot compile the update to 2.6.0 while that
+      pin remains. Update the input pin to 2.6.0 or later. The hatchling and
+      setuptools-scm build-tool pins may also need raising; this was not tested.
+    expired_at: 2026-12-30
+  - id: CVE-2025-66471
+    statement: >-
+      urllib3 2.2.2 remains in the 3.0.0 image because python/requirements.in pins
+      urllib3==2.2.2, so pip-tools cannot compile the update to 2.6.0 while that
+      pin remains. Update the input pin to 2.6.0 or later. The hatchling and
+      setuptools-scm build-tool pins may also need raising; this was not tested.
+    expired_at: 2026-12-30
+  - id: CVE-2026-21441
+    statement: >-
+      urllib3 2.2.2 remains in the 3.0.0 image because python/requirements.in pins
+      urllib3==2.2.2, so pip-tools cannot compile the update to 2.6.3 while that
+      pin remains. Update the input pin to 2.6.3 or later. The hatchling and
+      setuptools-scm build-tool pins may also need raising; this was not tested.
+    expired_at: 2026-12-30
+  - id: CVE-2026-44431
+    statement: >-
+      urllib3 2.2.2 remains in the 3.0.0 image because python/requirements.in pins
+      urllib3==2.2.2, so pip-tools cannot compile the update to 2.7.0 while that
+      pin remains. Update the input pin to 2.7.0 or later. The hatchling and
+      setuptools-scm build-tool pins may also need raising; this was not tested.
+    expired_at: 2026-12-30
+  - id: CVE-2026-97687
+    statement: >-
+      urllib3 2.2.2 remains in the 3.0.0 image because python/requirements.in pins
+      urllib3==2.2.2, so pip-tools cannot compile the update to 2.8.0 while that
+      pin remains. Update the input pin to 2.8.0 or later. The hatchling and
+      setuptools-scm build-tool pins may also need raising; this was not tested.
+    expired_at: 2026-12-30
+  - id: CVE-2026-97689
+    statement: >-
+      urllib3 2.2.2 remains in the 3.0.0 image because python/requirements.in pins
+      urllib3==2.2.2, so pip-tools cannot compile the update to 2.8.0 while that
+      pin remains. Update the input pin to 2.8.0 or later. The hatchling and
+      setuptools-scm build-tool pins may also need raising; this was not tested.
+    expired_at: 2026-12-30
