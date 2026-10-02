@@ -111,8 +111,8 @@ jobs:
 
       - name: Fetch the loaded-plugins check of devportal-local at a pinned commit
         env:
-          # The merge that made the check read the face and the installer logs from FACE_CMD and LOGS_CMD.
-          COMMIT: caada6ad2e69438aed9a8ca827ea764ef0264f3a
+          # The merge that made the check match OCI entries by their package name.
+          COMMIT: 527ead460946d9b3278f24c545295b15474dffbc
         run: |
           set -euo pipefail
           curl --fail --location --silent --show-error --retry 3 --output "$RUNNER_TEMP/check-loaded-plugins.sh" \
