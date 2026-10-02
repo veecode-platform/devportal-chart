@@ -1,7 +1,7 @@
 
 # VeeCode DevPortal Helm Chart
 
-![Version: 0.1.26](https://img.shields.io/badge/Version-0.1.26-informational?style=flat-square)
+![Version: 0.1.27](https://img.shields.io/badge/Version-0.1.27-informational?style=flat-square)
 ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
 
 A Helm chart for deploying VeeCode DevPortal, a VeeCode distribution of Backstage.
@@ -26,7 +26,7 @@ Helm repository.
 
 ```console
 helm repo add veecode https://veecode-platform.github.io/next-charts
-helm install devportal veecode/devportal --version 0.1.26 -n devportal --create-namespace -f values.yaml
+helm install devportal veecode/devportal --version 0.1.27 -n devportal --create-namespace -f values.yaml
 ```
 
 The [DevPortal 3.x install guide](https://docs-next.platform.vee.codes/devportal/installation-guide/v3-preview/intro/)
@@ -45,6 +45,8 @@ See [docs/product-face-overrides.md](../../docs/product-face-overrides.md) for h
 - A PostgreSQL database. The chart ships no embedded database; it reads the connection from the `veecode-runtime-secrets` Secret.
 
 ## Usage
+
+Set `upstream.backstage.hostAliases` to add static host entries to the portal pod's `/etc/hosts`. The chart passes this Backstage value through directly.
 
 List the published versions and install the newest one:
 
@@ -162,12 +164,18 @@ Kubernetes: `>= 1.27.0-0`
 | global.lightspeed.sidecar.image | Full image reference for the Lightspeed Core sidecar. Override for disconnected environments. | string | `"quay.io/lightspeed-core/lightspeed-stack:0.5.3"` |
 | global.lightspeed.sidecar.resources | Resource requests/limits for the Lightspeed Core sidecar. | object | `{"limits":{"cpu":"1000m","memory":"2Gi"},"requests":{"cpu":"100m","memory":"512Mi"}}` |
 | global.veecode.branding | config chain (see extraAppConfig veecode-product), so these win. | object | `{"fullLogo":"","fullLogoWidth":180,"iconLogo":"","title":"VeeCode DevPortal"}` |
+| global.veecode.deployment.caBundle | Existing ConfigMap or Secret with the additional CA bundle. An empty name disables the volume, mount, and environment variable. | object | `{"key":"ca.crt","kind":"ConfigMap","name":""}` |
+| global.veecode.deployment.caBundle.key | Data key that contains the CA bundle. | string | `"ca.crt"` |
+| global.veecode.deployment.caBundle.kind | Kubernetes resource kind that contains the bundle. | string | `"ConfigMap"` |
+| global.veecode.deployment.caBundle.name | Name of the ConfigMap or Secret. Empty disables this setting. | string | `""` |
+| global.veecode.deployment.progressDeadlineSeconds | Positive Deployment rollout deadline in seconds. Zero leaves the field absent and keeps the Kubernetes default of 600 seconds. | int | `0` |
 | global.veecode.guestAuth.enabled |  | bool | `true` |
 | global.veecode.preInstallCommand |  | string | `"node regenerate-extensions-install.js --config app-config.yaml --config app-config.example.yaml --config app-config.example.production.yaml --config app-config-from-configmap.yaml && node merge-dynamic-plugins.js"` |
 | global.veecode.support.docsUrl |  | string | `"https://github.com/veecode-platform/support/discussions"` |
 | global.veecode.support.subtitle |  | string | `"VeeCode DevPortal support"` |
 | global.veecode.support.url |  | string | `"https://github.com/veecode-platform/support/discussions"` |
 | kubernetesPlugin.rbac.enabled | Grant the chart's service account read-only access used by the Kubernetes plugin. | bool | `true` |
+| kubernetesPlugin.rbac.namespaceQualifiedName | Include the release namespace in both cluster-scoped RBAC names. Enable when releases with the same name share a cluster across namespaces. | bool | `false` |
 | kubernetesPlugin.rbac.serviceAccountName | Optional override; empty follows the upstream chart's generated service account name. | string | `""` |
 | nameOverride |  | string | `"developer-hub"` |
 | orchestrator.enabled |  | bool | `false` |
