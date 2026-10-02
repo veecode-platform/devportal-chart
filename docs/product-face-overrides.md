@@ -1,5 +1,7 @@
 # Customizing the VeeCode Product Face
 
+This guide applies from DevPortal 3.0.0, chart 1.0.0.
+
 The `backstage` chart ships a baked-in set of plugins — the "VeeCode product
 face" (Home, header, RBAC UI, theme, About, Marketplace/Extensions, TechDocs,
 Notifications, Signals, Tech Radar) — so a stock install looks and behaves
@@ -36,9 +38,11 @@ global:
 
 ### Disable one face plugin
 
-Add an entry with the **exact package ref** from the reference table below
-and `disabled: true`. The installer matches on that ref and overrides just
-that one entry — the rest of the face is untouched:
+Add an entry with the current full package ref from the reference table below
+and `disabled: true`. The installer matches the registry and repository. If
+both refs include a selector, those selectors must match. A different tag or
+digest still matches but selects a different artifact version. Use the current
+ref from the table so you do not pin an older artifact:
 
 ```yaml
 global:
@@ -55,7 +59,9 @@ An override written against an old local path no longer matches a face plugin af
 If your override for a face package **also** sets `pluginConfig`, the
 installer replaces that plugin's `pluginConfig` wholesale — it does not
 deep-merge with the face's own `pluginConfig`. You will lose every key you
-didn't restate, not just the ones you meant to change.
+didn't restate, not just the ones you meant to change. A tag or digest in the
+override pins that artifact version; refresh or remove the override when the
+face pin changes.
 
 Prefer `disabled: true` alone. If you must reconfigure a face plugin, copy
 the full `pluginConfig` block for that package (see the face file reference
@@ -63,20 +69,25 @@ below or ask VeeCode for the current pin) and edit only what you need.
 
 ### Full-ref form only
 
-Always use the **full package ref** (with its digest or version) in your
-overrides, exactly as it appears in the reference table. Do not use bare
-`{{inherit}}` — it is an internal chart/canonical-source mechanism, not a
-customer-facing override syntax, and it has no meaning outside a package
-already defined at a lower installer level.
+Always use a **full package ref** with a valid digest or tag. The installer
+matches the registry and repository; when both refs include a selector, those
+selectors must also match. A different digest or tag still matches and pins
+the selected artifact version, so refresh or remove an override when the face
+pin changes. Do not use bare `{{inherit}}`. It is an internal chart mechanism
+for resolving a package version from a lower installer level, not a customer-
+facing syntax. It only resolves a version for a package already defined at a
+lower level.
 
 ## Face plugin reference
 
-These are the 20 entries currently baked into the image
+These are the 20 entries baked into the image from DevPortal 3.0.0, chart 1.0.0
 (`veecode/dynamic-plugins.veecode.yaml` in `devportal-core`). Use the
 `package` value verbatim as the override key; `default` reflects the
 face file's own `disabled` field. Digest-pinned refs are given in full below
-the table — a truncated ref will not match and the override will be added as
-a new plugin instead of disabling the face one.
+the table. The installer identifies a face plugin by registry and repository;
+if both refs include a selector, the selectors must also match. A different
+tag or digest still matches and selects that artifact version. An OCI ref
+without a tag or digest is invalid.
 
 | # | Purpose | Default |
 | --- | --- | --- |
