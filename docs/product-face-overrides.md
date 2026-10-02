@@ -74,9 +74,9 @@ matches the registry and repository; when both refs include a selector, those
 selectors must also match. A different digest or tag still matches and pins
 the selected artifact version, so refresh or remove an override when the face
 pin changes. Do not use bare `{{inherit}}`. It is an internal chart mechanism
-for resolving a package version from a lower installer level, not a customer-
-facing syntax. It only resolves a version for a package already defined at a
-lower level.
+for resolving a package version from a lower installer level, not a
+customer-facing syntax. It only resolves a version for a package already
+defined at a lower level.
 
 ## Face plugin reference
 
