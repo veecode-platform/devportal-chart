@@ -9,6 +9,22 @@
 {{- $extraCatalogImages := include "rhdh.catalogIndex.extraImagesEnvValue" . | trim -}}
 {{- $guestAuthEnabled := .Values.global.veecode.guestAuth.enabled -}}
 {{- $preInstallCommand := .Values.global.veecode.preInstallCommand | default "" -}}
+{{- $deployment := .Values.global.veecode.deployment -}}
+{{- $caBundle := $deployment.caBundle -}}
+{{- $caBundleEnabled := $caBundle.name -}}
+{{- $progressDeadlineSeconds := $deployment.progressDeadlineSeconds -}}
+{{- if and $caBundleEnabled (not (has $caBundle.kind (list "ConfigMap" "Secret"))) -}}
+{{- fail "global.veecode.deployment.caBundle.kind must be ConfigMap or Secret" -}}
+{{- end -}}
+{{- if and $caBundleEnabled (not $caBundle.key) -}}
+{{- fail "global.veecode.deployment.caBundle.key must not be empty" -}}
+{{- end -}}
+{{- if and (ne $progressDeadlineSeconds nil) (not (has (kindOf $progressDeadlineSeconds) (list "int" "int32" "int64" "float64"))) -}}
+{{- fail "global.veecode.deployment.progressDeadlineSeconds must be an integer" -}}
+{{- end -}}
+{{- if and (eq (kindOf $progressDeadlineSeconds) "float64") (ne (float64 $progressDeadlineSeconds) (float64 (int64 $progressDeadlineSeconds))) -}}
+{{- fail "global.veecode.deployment.progressDeadlineSeconds must be an integer" -}}
+{{- end -}}
 ---
 apiVersion: {{ include "common.capabilities.deployment.apiVersion" . }}
 kind: Deployment
@@ -32,6 +48,12 @@ spec:
   replicas: {{ .Values.backstage.replicas }}
   {{- end }}
   revisionHistoryLimit: {{ .Values.backstage.revisionHistoryLimit }}
+  {{- if lt (int64 $progressDeadlineSeconds) 0 }}
+  {{- fail "global.veecode.deployment.progressDeadlineSeconds must not be negative" }}
+  {{- end }}
+  {{- if gt (int64 $progressDeadlineSeconds) 0 }}
+  progressDeadlineSeconds: {{ int64 $progressDeadlineSeconds }}
+  {{- end }}
   {{- if .Values.backstage.strategy }}
   strategy: {{- include "common.tplvalues.render" ( dict "value" .Values.backstage.strategy "context" $) | nindent 4 }}
   {{- end }}
@@ -82,7 +104,7 @@ spec:
         {{- include "common.tplvalues.render" ( dict "value" .Values.backstage.hostAliases "context" $) | nindent 8 }}
       {{- end }}
       volumes:
-        {{- if (or .Values.backstage.extraAppConfig (and .Values.backstage.extraVolumeMounts .Values.backstage.extraVolumes)) }}
+        {{- if (or $caBundleEnabled .Values.backstage.extraAppConfig (and .Values.backstage.extraVolumeMounts .Values.backstage.extraVolumes)) }}
         {{- range .Values.backstage.extraAppConfig }}
         {{- if or (ne .configMapRef "veecode-auth") $guestAuthEnabled }}
         - name: {{ .configMapRef }}
@@ -93,6 +115,22 @@ spec:
         {{- if .Values.backstage.extraVolumes }}
           {{- include "common.tplvalues.render" ( dict "value" .Values.backstage.extraVolumes "context" $ ) | nindent 8 }}
         {{- end }}
+        {{- end }}
+        {{- if $caBundleEnabled }}
+        - name: veecode-ca-bundle
+          {{- if eq $caBundle.kind "Secret" }}
+          secret:
+            secretName: {{ $caBundle.name | quote }}
+            items:
+              - key: {{ $caBundle.key | quote }}
+                path: ca.crt
+          {{- else }}
+          configMap:
+            name: {{ $caBundle.name | quote }}
+            items:
+              - key: {{ $caBundle.key | quote }}
+                path: ca.crt
+          {{- end }}
         {{- end }}
         {{- if .Values.backstage.appConfig }}
         - name: backstage-app-config
@@ -246,6 +284,10 @@ spec:
             {{- if .Values.backstage.extraEnvVars }}
             {{- include "common.tplvalues.render" ( dict "value" .Values.backstage.extraEnvVars "context" $) | nindent 12 }}
             {{- end }}
+            {{- if $caBundleEnabled }}
+            - name: NODE_EXTRA_CA_CERTS
+              value: {{ printf "%s/veecode-ca-bundle/ca.crt" $installDir | quote }}
+            {{- end }}
           ports:
             - name: backend
               containerPort: {{ .Values.backstage.containerPorts.backend }}
@@ -253,7 +295,7 @@ spec:
             {{- if .Values.backstage.extraPorts }}
             {{- include "common.tplvalues.render" ( dict "value" .Values.backstage.extraPorts "context" $) | nindent 12 }}
             {{- end }}
-          {{- if (or .Values.backstage.extraAppConfig .Values.backstage.appConfig (and .Values.backstage.extraVolumeMounts .Values.backstage.extraVolumes)) }}
+          {{- if (or $caBundleEnabled .Values.backstage.extraAppConfig .Values.backstage.appConfig (and .Values.backstage.extraVolumeMounts .Values.backstage.extraVolumes)) }}
           volumeMounts:
             {{- range .Values.backstage.extraAppConfig }}
             {{- if or (ne .configMapRef "veecode-auth") $guestAuthEnabled }}
@@ -269,6 +311,11 @@ spec:
             {{- end }}
             {{- if .Values.backstage.extraVolumeMounts }}
               {{- include "common.tplvalues.render" ( dict "value" .Values.backstage.extraVolumeMounts "context" $ ) | nindent 12 }}
+            {{- end }}
+            {{- if $caBundleEnabled }}
+            - name: veecode-ca-bundle
+              mountPath: {{ printf "%s/veecode-ca-bundle" $installDir | quote }}
+              readOnly: true
             {{- end }}
           {{- end }}
         {{- if $lightspeed.enabled }}

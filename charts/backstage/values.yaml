@@ -7,6 +7,8 @@ kubernetesPlugin:
     enabled: true
     # -- Optional override; empty follows the upstream chart's generated service account name.
     serviceAccountName: ""
+    # -- Include the release namespace in both cluster-scoped RBAC names. Enable when releases with the same name share a cluster across namespaces.
+    namespaceQualifiedName: false
 global:
   dynamic:
     # Both entries are level-0 includes read by the installer's fixed-filename
@@ -114,6 +116,17 @@ global:
       --config app-config.example.production.yaml
       --config app-config-from-configmap.yaml
       && node merge-dynamic-plugins.js
+    deployment:
+      # -- Positive Deployment rollout deadline in seconds. Zero leaves the field absent and keeps the Kubernetes default of 600 seconds.
+      progressDeadlineSeconds: 0
+      # -- Existing ConfigMap or Secret with the additional CA bundle. An empty name disables the volume, mount, and environment variable.
+      caBundle:
+        # -- Kubernetes resource kind that contains the bundle.
+        kind: ConfigMap
+        # -- Name of the ConfigMap or Secret. Empty disables this setting.
+        name: ""
+        # -- Data key that contains the CA bundle.
+        key: ca.crt
   # -- Catalog index configuration for automatic plugin discovery.
   # The `install-dynamic-plugins.py` script pulls this image if the `CATALOG_INDEX_IMAGE` environment variable is set.
   # The `dynamic-plugins.default.yaml` file will be extracted and written to `dynamic-plugins-root` volume mount.
