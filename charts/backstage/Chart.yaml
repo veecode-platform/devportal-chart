@@ -43,7 +43,7 @@ sources:
 # to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
 # VeeCode owns this chart version independently from the upstream chart version recorded above.
-version: 0.1.28
+version: 1.0.0-rc.1
 # 0.1.9: the marketplace pre-step sees the operator's appConfig. The init
 #  container's regenerate-extensions-install.js read only the image-baked
 #  app-configs, so `backend.database.prefix` (declared in the deployment's own
@@ -122,4 +122,5 @@ version: 0.1.28
 # 0.1.27: add opt-in CA trust, Deployment rollout deadline, and namespace-qualified
 #  Kubernetes plugin ClusterRole and ClusterRoleBinding names. Defaults retain
 #  the current Deployment fields and cluster-scoped RBAC names.
-appVersion: 3.0.0-beta.10
+# 1.0.0-rc.1: image -> 3.0.0-rc.2, with tag, digest and appVersion moved together (release candidate).
+appVersion: 3.0.0-rc.2

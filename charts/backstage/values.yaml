@@ -298,17 +298,16 @@ upstream:
     image:
       registry: docker.io
       repository: veecode/devportal
-      # This is the published 3.0.0-beta.10 image. Against beta.9 the marketplace
-      # pre-step skips an unresolvable row instead of dropping every selection,
-      # pins OCI references that have no plugin selector, resolves each enabled
-      # row once and writes one row per plugin, and the baked face pins the
-      # marketplace plugins to their 0.2.0 artifacts. It also carries the RHDH
-      # upstream sync up to the commit before the Backstage 1.53 bump, with
-      # install-dynamic-plugins 0.4.1. Main product line, Backstage 1.52. The
-      # digest WINS over the tag — bump both together. It is the multi-arch
-      # manifest list digest (amd64 + arm64), not a single-arch image digest.
-      tag: 3.0.0-beta.10
-      digest: sha256:28d1bafed0cfa3cdb3ceab1868ccc4a729410e0921b352457e167ab7cbfb3e5a
+      # This is the 3.0.0-rc.2 release candidate. Against beta.10 the product
+      # face pins its 20 plugins as digest-pinned OCI packages (13 of them moved
+      # from local paths), including marketplace 0.3.0, and the marketplace
+      # pre-step applies deploy configuration over marketplace rows over the
+      # face. Against rc.1 it lifts vm2 to 3.11.7 for the critical advisories
+      # published on 2026-10-01. Main product line, Backstage 1.52. The digest
+      # WINS over the tag: bump both together. It is the multi-arch manifest
+      # list digest (amd64 + arm64), not a single-arch image digest.
+      tag: 3.0.0-rc.2
+      digest: sha256:585daa40009ca79988766a717257d592bce0f711b851fa06c200954aeafc6564
       pullPolicy: IfNotPresent
     command: []
     # FIXME (tumido): USE POSTGRES_PASSWORD and POSTGRES_USER instead of POSTGRES_ADMIN_PASSWORD
