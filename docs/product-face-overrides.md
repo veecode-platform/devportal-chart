@@ -124,9 +124,9 @@ Full package refs, in table order:
 6. `oci://quay.io/veecode/veecode-platform-backstage-plugin-about@sha256:5746126ea0129d0125d0fada629b543c981d121bbfd27263dfec0fcae9568ead!veecode-platform-backstage-plugin-about`
 7. `oci://quay.io/veecode/veecode-platform-backstage-plugin-about-backend@sha256:99ca46df8ebda0e36793c18533c3fc4f00dd099467931bc3bf7685cc35958ac7!veecode-platform-backstage-plugin-about-backend`
 8. `oci://quay.io/veecode/red-hat-developer-hub-backstage-plugin-catalog-backend-module-extensions@sha256:9fad03e713fe046ab2b381d243bbc231497dcb27c260aa127fa6fd163254987d!red-hat-developer-hub-backstage-plugin-catalog-backend-module-extensions`
-9. `oci://quay.io/veecode/devportal-marketplace-backend@sha256:fe274bae36be4ca70650a2f36802772b82ad47f4a3eac4d6702619c980dbf489!devportal-marketplace-backend`
-10. `oci://quay.io/veecode/devportal-pending-changes-dynamic@sha256:cdffd11f61b7c7feb1980c040165485b7646e797652e3ae55f64c9150729d406!devportal-pending-changes-dynamic`
-11. `oci://quay.io/veecode/devportal-marketplace-frontend-dynamic@sha256:83c78403a24a800d425c10565f796d33c2ceab6c5096d343533628bfd0c7426d!devportal-marketplace-frontend-dynamic`
+9. `oci://quay.io/veecode/devportal-marketplace-backend@sha256:153527c7d510eb07aa4cc14be40534419d55632b66c7ff254195fc08830f42ad!devportal-marketplace-backend`
+10. `oci://quay.io/veecode/devportal-pending-changes-dynamic@sha256:18d75d59e287e9e3ab4794ce851e1aa947c8674615def00273550574e365b342!devportal-pending-changes-dynamic`
+11. `oci://quay.io/veecode/devportal-marketplace-frontend-dynamic@sha256:311de8798d0db945e0ed0f333864ff260d394fe41336cb554aeae924d4a98e16!devportal-marketplace-frontend-dynamic`
 12. `oci://quay.io/veecode/backstage-plugin-techdocs@sha256:d8222a85e6a4b61e230e2ff8944ccd794876c1f30eb9b49faeade3c6c308dcc9!backstage-plugin-techdocs`
 13. `oci://quay.io/veecode/backstage-plugin-techdocs-backend@sha256:a52ab2f01ccf85a23352655b25d4449996cafed381cfb6d837cf537205021c3e!backstage-plugin-techdocs-backend`
 14. `oci://quay.io/veecode/backstage-plugin-techdocs-module-addons-contrib@sha256:9feeac06c77eb32f9b5a7f2fa74e2eaa9d538bdb0dd62811ec5f9d010c437035!backstage-plugin-techdocs-module-addons-contrib`

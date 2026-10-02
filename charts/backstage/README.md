@@ -1,7 +1,7 @@
 
 # VeeCode DevPortal Helm Chart
 
-![Version: 0.1.27](https://img.shields.io/badge/Version-0.1.27-informational?style=flat-square)
+![Version: 0.1.28](https://img.shields.io/badge/Version-0.1.28-informational?style=flat-square)
 ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
 
 A Helm chart for deploying VeeCode DevPortal, a VeeCode distribution of Backstage.
@@ -26,7 +26,7 @@ Helm repository.
 
 ```console
 helm repo add veecode https://veecode-platform.github.io/next-charts
-helm install devportal veecode/devportal --version 0.1.27 -n devportal --create-namespace -f values.yaml
+helm install devportal veecode/devportal --version 0.1.28 -n devportal --create-namespace -f values.yaml
 ```
 
 The [DevPortal 3.x install guide](https://docs-next.platform.vee.codes/devportal/installation-guide/v3-preview/intro/)
