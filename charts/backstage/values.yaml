@@ -298,14 +298,15 @@ upstream:
     image:
       registry: docker.io
       repository: veecode/devportal
-      # This is the 3.0.1-rc.1 release candidate. Against 3.0.0 it moves the
-      # backend to better-sqlite3 13.0.3, which stops the start crash on an
-      # SQLite database under Node 24.19.0, and the face's Marketplace card to
-      # 0.3.1 (pending chip after a confirm; the confirm click no longer opens
-      # the details drawer). Main product line, Backstage 1.52. The digest WINS
+      # This is the 3.0.1 release, promoted by digest from the qualified
+      # 3.0.1-rc.1 candidate. Against 3.0.0 it moves the backend to
+      # better-sqlite3 13.0.3, which stops the start crash on an SQLite
+      # database under Node 24.19.0, and the face's Marketplace card to 0.3.1
+      # (pending chip after a confirm; the confirm click no longer opens the
+      # details drawer). Main product line, Backstage 1.52. The digest WINS
       # over the tag: bump both together. It is the multi-arch manifest list
       # digest (amd64 + arm64), not a single-arch image digest.
-      tag: 3.0.1-rc.1
+      tag: 3.0.1
       digest: sha256:881f936ff4a38b31998d52cb6cd558d6b5e6fca9a3d99b08e80aba77913aaa38
       pullPolicy: IfNotPresent
     command: []
