@@ -43,7 +43,7 @@ sources:
 # to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
 # VeeCode owns this chart version independently from the upstream chart version recorded above.
-version: 1.0.1-rc.1
+version: 1.0.1
 # 0.1.9: the marketplace pre-step sees the operator's appConfig. The init
 #  container's regenerate-extensions-install.js read only the image-baked
 #  app-configs, so `backend.database.prefix` (declared in the deployment's own
@@ -125,4 +125,5 @@ version: 1.0.1-rc.1
 # 1.0.0-rc.1: image -> 3.0.0-rc.2, with tag, digest and appVersion moved together (release candidate).
 # 1.0.0: image -> 3.0.0, with tag, digest and appVersion moved together (release; same digest as 3.0.0-rc.2).
 # 1.0.1-rc.1: image -> 3.0.1-rc.1 (better-sqlite3 13.0.3, Marketplace card 0.3.1), with tag, digest and appVersion moved together (release candidate).
-appVersion: 3.0.1-rc.1
+# 1.0.1: image -> 3.0.1, with tag, digest and appVersion moved together (release; same digest as 3.0.1-rc.1).
+appVersion: 3.0.1
