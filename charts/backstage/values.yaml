@@ -298,14 +298,15 @@ upstream:
     image:
       registry: docker.io
       repository: veecode/devportal
-      # This is the 3.0.2 release, promoted by digest from the qualified
-      # 3.0.2-rc.1 candidate. Against 3.0.1 it moves proxy-addr to 2.0.8 and
-      # vm2 to 3.12.2, which clears the critical vulnerabilities the scan
-      # reported in 3.0.1. Main product line, Backstage 1.52. The digest WINS
-      # over the tag: bump both together. It is the multi-arch manifest list
-      # digest (amd64 + arm64), not a single-arch image digest.
-      tag: 3.0.2
-      digest: sha256:48f95e221844db13887b71dd7379a867b338ec1f9601a7ce3882e376aad36706
+      # This is the 3.0.3 release, promoted by digest from the qualified
+      # 3.0.3-rc.1 candidate. Against 3.0.2 the product face pins the five
+      # default backend plugins (techdocs, notifications, signals, tech-radar,
+      # Marketplace) rebuilt with proxy-addr 2.0.8 (CVE-2026-90711). Main
+      # product line, Backstage 1.52. The digest WINS over the tag: bump both
+      # together. It is the multi-arch manifest list digest (amd64 + arm64),
+      # not a single-arch image digest.
+      tag: 3.0.3
+      digest: sha256:e5c84f744994b30b329e23ff8480857bd4b0be46d63e027b5e87d0428c1df7f5
       pullPolicy: IfNotPresent
     command: []
     # FIXME (tumido): USE POSTGRES_PASSWORD and POSTGRES_USER instead of POSTGRES_ADMIN_PASSWORD
