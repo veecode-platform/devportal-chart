@@ -9,9 +9,12 @@
 #     Chart.yaml version and appVersion, the image tag and digest in values.yaml, the schema
 #     defaults that mirror them, and the generated README.md; nothing under qualification/
 #     or in this workflow changes;
-#   - a successful Qualification run, newest first among the last 50, recorded this image
-#     digest in its manifest;
-#   - that run's commit has the same charts/backstage as BASE_SHA, so the chart it built its
+#   - a successful run, newest first among the last 50 on main, qualified this digest as an
+#     image (an image_tag dispatch or the nightly), not a published chart: its scope job logged
+#     "Qualify the image ... at <digest>", and its manifest recorded the same digest;
+#   - that run was a dispatch or the nightly on main at a commit that BASE_SHA contains, so
+#     trusted code ran it; pull_request runs, which a fork controls, never count;
+#   - that commit has the same charts/backstage as BASE_SHA, so the chart it built its
 #     candidate from is this pull request's chart apart from the release fields.
 # Exits 1 with the reason on stderr otherwise. Needs gh with actions:read, git, yq and jq.
 set -euo pipefail
@@ -52,23 +55,24 @@ schema_base=$(base_file values.schema.json | jq -cS --arg ot "$old_tag" --arg t 
 
 dir=$(mktemp -d)
 trap 'rm -rf "$dir" "$base_values"' EXIT
-for row in $(gh run list --workflow "$WORKFLOW" --status success --limit 50 --json databaseId,headSha \
-  --jq '.[] | "\(.databaseId):\(.headSha)"'); do
-  run=${row%%:*} sha=${row#*:}
+for row in $(gh run list --workflow "$WORKFLOW" --branch main --status success --limit 50 \
+  --json databaseId,headSha,event --jq '.[] | "\(.databaseId):\(.headSha):\(.event)"'); do
+  IFS=: read -r run sha event <<< "$row"
+  case $event in workflow_dispatch | schedule) ;; *) continue ;; esac
+  git cat-file -e "$sha^{commit}" 2> /dev/null || continue
+  git merge-base --is-ancestor "$sha" "$BASE" || continue
+  git diff --quiet "$sha" "$BASE" -- "$CHART" || continue
+  scope_job=$(gh api "repos/{owner}/{repo}/actions/runs/$run/jobs" \
+    --jq '.jobs[] | select(.name == "Decide what the run qualifies") | .id') || continue
+  scope_log=$(gh api "repos/{owner}/{repo}/actions/jobs/$scope_job/logs" 2> /dev/null) || continue
+  grep -F "Qualify the image docker.io/veecode/devportal:" <<< "$scope_log" |
+    grep -qF " at $digest with the chart at this ref." || continue
   rm -rf "${dir:?}/$run"
   gh run download "$run" --name qualification-sequence --dir "$dir/$run" > /dev/null 2>&1 || continue
-  manifest=$dir/$run/qualification-manifest.json
-  [ "$(jq -r '.image_digest // ""' "$manifest" 2> /dev/null)" = "$digest" ] || continue
-  if ! git cat-file -e "$sha^{commit}" 2> /dev/null; then
-    say "run $run qualified $digest at $sha, which this checkout does not have"
-    continue
-  fi
-  if git diff --quiet "$sha" "$BASE" -- "$CHART"; then
-    say "run $run qualified $digest with the chart of $BASE"
-    echo "$run"
-    exit 0
-  fi
-  say "run $run qualified $digest, but its chart differs from $BASE"
+  [ "$(jq -r '.image_digest // ""' "$dir/$run/qualification-manifest.json" 2> /dev/null)" = "$digest" ] || continue
+  say "run $run ($event on main) qualified the image $digest with the chart of $BASE"
+  echo "$run"
+  exit 0
 done
-say "no successful Qualification run among the last 50 recorded $digest"
+say "no image qualification on main among the last 50 successful runs matches $digest and the chart of $BASE"
 exit 1
