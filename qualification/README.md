@@ -34,7 +34,13 @@ The workflow runs on every pull request against `main`, and its first job decide
 run qualifies:
 
 - A pull request that changes `upstream.backstage.image` in
-  `charts/backstage/values.yaml` qualifies its chart.
+  `charts/backstage/values.yaml` qualifies its chart, unless it is a release pull request
+  whose image is already qualified. `prior-qualification.sh` checks that the pull request
+  changes only the release fields (version, appVersion, image tag and digest, the schema
+  defaults that mirror them, the generated README), and that a successful run recorded this
+  digest with the same `charts/backstage` as the base, which is what an `image_tag` dispatch
+  before the release does. The two jobs are then skipped, the job summary links that run,
+  and `Qualification` passes.
 - A pull request that changes `qualification/` or the workflow, and not the image,
   self-tests the qualification against its chart.
 - Any other pull request has nothing to qualify. The two jobs are skipped and
