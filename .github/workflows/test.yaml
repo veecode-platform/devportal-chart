@@ -17,6 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       charts: ${{ steps.list.outputs.charts }}
+      scenarios: ${{ steps.list.outputs.scenarios }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -42,6 +43,7 @@ jobs:
             changed_files=$(git diff --name-only "origin/${TARGET_BRANCH}"...HEAD -- charts/)
             if [[ -z "$changed_files" ]]; then
               echo "charts=[]" >> "$GITHUB_OUTPUT"
+              echo "scenarios=[]" >> "$GITHUB_OUTPUT"
               exit 0
             fi
             chart_dirs=$(echo "$changed_files" | cut -d'/' -f1-2 | sort -u)
@@ -59,16 +61,30 @@ jobs:
           done <<< "$chart_dirs"
           echo "charts=$charts" >> "$GITHUB_OUTPUT"
 
+          # One job per CI values file of the product chart, so its scenarios install in
+          # parallel instead of one after another; every other chart stays one job.
+          scenarios='[]'
+          for chart_name in $(jq -r '.[]' <<< "$charts"); do
+            if [[ "$chart_name" == "backstage" ]]; then
+              for f in charts/backstage/ci/*-values.yaml; do
+                scenarios=$(jq -c --arg c "$chart_name" --arg v "$(basename "$f")" '. + [{chart: $c, values: $v}]' <<< "$scenarios")
+              done
+            else
+              scenarios=$(jq -c --arg c "$chart_name" '. + [{chart: $c, values: ""}]' <<< "$scenarios")
+            fi
+          done
+          echo "scenarios=$scenarios" >> "$GITHUB_OUTPUT"
+
   test-chart:
     needs: discover-charts
     if: needs.discover-charts.outputs.charts != '[]'
-    name: Test (${{ matrix.chart }})
+    name: Test (${{ matrix.chart }}${{ matrix.values != '' && format(', {0}', matrix.values) || '' }})
     runs-on: ubuntu-latest
     timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
-        chart: ${{ fromJson(needs.discover-charts.outputs.charts) }}
+        include: ${{ fromJson(needs.discover-charts.outputs.scenarios) }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -86,6 +102,7 @@ jobs:
         with:
           target_branch: ${{ github.event.pull_request.base.ref }}
           chart: charts/${{ matrix.chart }}
+          ci_values: ${{ matrix.values }}
           monitoring_heartbeat: ${{ vars.TEST_MONITORING_HEARTBEAT_ENABLED || 'false' }}
           helm_template_values_file: ${{ matrix.chart == 'backstage' && '/tmp/backstage-full-plugins-values.yaml' || '' }}
 

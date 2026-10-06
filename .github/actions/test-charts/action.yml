@@ -21,6 +21,10 @@ inputs:
     description: 'Extra arguments to pass to helm via ct install --helm-extra-args (e.g., --values file.yaml)'
     required: false
     default: ''
+  ci_values:
+    description: 'One file name under <chart>/ci (e.g., default-values.yaml). When set, ct install runs only that scenario, so each scenario can run in its own job.'
+    required: false
+    default: ''
   helm_template_values_file:
     description: 'Extra values file for a helm-template sanity check (renders each CI scenario with these values layered on top, but does not install)'
     required: false
@@ -225,7 +229,17 @@ runs:
         INPUT_TARGET_BRANCH: ${{ inputs.target_branch }}
         INPUT_ALL_CHARTS: ${{ inputs.all_charts }}
         INPUT_MONITORING_HEARTBEAT: ${{ inputs.monitoring_heartbeat }}
+        INPUT_CI_VALUES: ${{ inputs.ci_values }}
       run: |
+        if [[ -n "$INPUT_CI_VALUES" ]]; then
+          # ct installs every ci/*-values.yaml it finds. Keep only this job's scenario;
+          # --skip-missing-values below makes the upgrade test skip the previous
+          # revision's files that this job removed.
+          [[ -f "$INPUT_CHART/ci/$INPUT_CI_VALUES" ]] || { echo "::error::$INPUT_CHART/ci/$INPUT_CI_VALUES not found"; exit 1; }
+          find "$INPUT_CHART/ci" -maxdepth 1 -name '*-values.yaml' ! -name "$INPUT_CI_VALUES" -delete
+          echo "Scenario: $INPUT_CI_VALUES"
+        fi
+
         if [[ "$INPUT_MONITORING_HEARTBEAT" == "true" ]]; then
           (
             while true; do
@@ -276,6 +290,9 @@ runs:
           fi
         else
           CT_ARGS+=(--upgrade)
+        fi
+        if [[ -n "$INPUT_CI_VALUES" ]]; then
+          CT_ARGS+=(--skip-missing-values)
         fi
         if [[ "$RUNNER_DEBUG" == "1" ]]; then
           CT_ARGS+=(--debug)
