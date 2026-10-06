@@ -44,6 +44,10 @@ jobs:
   scope:
     name: Decide what the run qualifies
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Reads earlier Qualification runs and their manifests (prior-qualification.sh).
+      actions: read
     outputs:
       run: ${{ steps.decide.outputs.run }}
       self_test: ${{ steps.decide.outputs.self_test }}
@@ -63,6 +67,8 @@ jobs:
           SELF_TEST_INPUT: ${{ inputs.self_test }}
           CHART_VERSION_INPUT: ${{ inputs.chart_version }}
           IMAGE_TAG_INPUT: ${{ inputs.image_tag }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
           image() { yq -o=json -I=0 '.upstream.backstage.image' "$1"; }
@@ -93,8 +99,16 @@ jobs:
           else
             git show "$BASE_SHA:charts/backstage/values.yaml" > "$RUNNER_TEMP/base-values.yaml"
             if [ "$(image "$RUNNER_TEMP/base-values.yaml")" != "$(image charts/backstage/values.yaml)" ]; then
-              echo "The pinned image changed: qualify the candidate chart."
-              run=true
+              if prior=$(bash qualification/prior-qualification.sh "$BASE_SHA"); then
+                # A release pull request: the image was qualified with this chart before it
+                # was pinned (image_tag), so qualifying it again here adds no evidence.
+                echo "::notice title=Already qualified::This release pull request pins an image that run $prior qualified with the same chart; not qualifying it again."
+                echo "Already qualified by $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$prior" >> "$GITHUB_STEP_SUMMARY"
+                run=false
+              else
+                echo "The pinned image changed: qualify the candidate chart."
+                run=true
+              fi
               self_test=false
             elif [ -n "$(git diff --name-only "$BASE_SHA" HEAD -- qualification .github/workflows/qualification.yaml)" ]; then
               echo "Only the qualification changed: self-test it against the current chart."
