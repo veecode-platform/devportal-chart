@@ -4,11 +4,19 @@ on:
   pull_request:
     branches:
       - main
+  schedule:
+    # Nightly, on the newest edge image, so a release candidate already built from main
+    # usually arrives qualified (the release flow's cut 3).
+    - cron: "17 4 * * *"
   workflow_dispatch:
     inputs:
       chart_version:
-        description: Published devportal chart version to qualify, as x.y.z or x.y.z-rc.N (for example 1.0.0-rc.1)
-        required: true
+        description: Published devportal chart version to qualify, as x.y.z or x.y.z-rc.N (for example 1.0.0-rc.1). Set this or image_tag.
+        required: false
+        type: string
+      image_tag:
+        description: Qualify a portal image before any chart pins it, by its docker.io/veecode/devportal tag (for example 3.0.2-rc.1 or edge). The run resolves it to a digest once and installs the chart at this ref with that image. Set this or chart_version.
+        required: false
         type: string
       self_test:
         description: Report the checks that need a change the candidate lacks as SKIP instead of failing them
@@ -26,7 +34,7 @@ on:
         default: none
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.number || format('dispatch-{0}-{1}-{2}-{3}', github.ref_name, inputs.chart_version, inputs.self_test, inputs.inject_failure) }}
+  group: ${{ github.workflow }}-${{ github.event.number || format('{0}-{1}-{2}-{3}-{4}-{5}', github.event_name, github.ref_name, inputs.chart_version, inputs.image_tag, inputs.self_test, inputs.inject_failure) }}
   cancel-in-progress: true
 
 permissions:
@@ -39,6 +47,8 @@ jobs:
     outputs:
       run: ${{ steps.decide.outputs.run }}
       self_test: ${{ steps.decide.outputs.self_test }}
+      image_tag: ${{ steps.decide.outputs.image_tag }}
+      image_digest: ${{ steps.decide.outputs.image_digest }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -51,10 +61,32 @@ jobs:
           EVENT: ${{ github.event_name }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           SELF_TEST_INPUT: ${{ inputs.self_test }}
+          CHART_VERSION_INPUT: ${{ inputs.chart_version }}
+          IMAGE_TAG_INPUT: ${{ inputs.image_tag }}
         run: |
           set -euo pipefail
           image() { yq -o=json -I=0 '.upstream.backstage.image' "$1"; }
-          if [ "$EVENT" = workflow_dispatch ]; then
+          image_tag=
+          image_digest=
+          if [ "$EVENT" = schedule ]; then
+            image_tag=edge
+          elif [ "$EVENT" = workflow_dispatch ]; then
+            image_tag=$IMAGE_TAG_INPUT
+            if [ -n "$image_tag" ] && [ -n "$CHART_VERSION_INPUT" ]; then
+              echo "::error::Set chart_version or image_tag, not both."
+              exit 1
+            fi
+            if [ -z "$image_tag" ] && [ -z "$CHART_VERSION_INPUT" ]; then
+              echo "::error::Set chart_version or image_tag."
+              exit 1
+            fi
+          fi
+          if [ -n "$image_tag" ]; then
+            image_digest=$(docker buildx imagetools inspect "docker.io/veecode/devportal:$image_tag" --format '{{.Manifest.Digest}}')
+            echo "Qualify the image docker.io/veecode/devportal:$image_tag at $image_digest with the chart at this ref."
+            run=true
+            self_test=false
+          elif [ "$EVENT" = workflow_dispatch ]; then
             echo "Dispatched: qualify the published package."
             run=true
             self_test=$SELF_TEST_INPUT
@@ -76,6 +108,8 @@ jobs:
           fi
           echo "run=$run" >> "$GITHUB_OUTPUT"
           echo "self_test=$self_test" >> "$GITHUB_OUTPUT"
+          echo "image_tag=$image_tag" >> "$GITHUB_OUTPUT"
+          echo "image_digest=$image_digest" >> "$GITHUB_OUTPUT"
 
   sequence:
     name: Sequence on KinD
@@ -109,6 +143,17 @@ jobs:
           helm repo add bitnami https://charts.bitnami.com/bitnami
           helm dependency build charts/backstage
 
+      - name: Build the candidate chart for the image
+        id: image-candidate
+        if: needs.scope.outputs.image_digest != ''
+        env:
+          IMAGE_TAG: ${{ needs.scope.outputs.image_tag }}
+          IMAGE_DIGEST: ${{ needs.scope.outputs.image_digest }}
+        run: |
+          set -euo pipefail
+          source qualification/lib.sh
+          echo "chart=$(image_candidate_chart "$IMAGE_TAG" "$IMAGE_DIGEST" "$RUNNER_TEMP/image-candidate")" >> "$GITHUB_OUTPUT"
+
       - name: Fetch the loaded-plugins check of devportal-local at a pinned commit
         env:
           # The merge that made the check match OCI entries by their package name.
@@ -127,7 +172,7 @@ jobs:
       - name: Previous final chart, marketplace install, upgrade, broken package, restarts, rollback
         env:
           CANDIDATE_VERSION: ${{ inputs.chart_version }}
-          CANDIDATE_CHART: ${{ github.event_name == 'pull_request' && 'charts/backstage' || '' }}
+          CANDIDATE_CHART: ${{ github.event_name == 'pull_request' && 'charts/backstage' || steps.image-candidate.outputs.chart }}
           SELF_TEST: ${{ needs.scope.outputs.self_test }}
           INJECT_FAILURE: ${{ inputs.inject_failure }}
           LOADED_PLUGINS_CHECK: ${{ runner.temp }}/check-loaded-plugins.sh
@@ -190,11 +235,16 @@ jobs:
         env:
           EVENT: ${{ github.event_name }}
           CHART_VERSION: ${{ inputs.chart_version }}
+          IMAGE_TAG: ${{ needs.scope.outputs.image_tag }}
+          IMAGE_DIGEST: ${{ needs.scope.outputs.image_digest }}
           OUT: ${{ runner.temp }}/candidate
         run: |
           set -euo pipefail
           if [ "$EVENT" = pull_request ]; then
             chart=charts/backstage
+          elif [ -n "$IMAGE_DIGEST" ]; then
+            source qualification/lib.sh
+            chart=$(image_candidate_chart "$IMAGE_TAG" "$IMAGE_DIGEST" "$RUNNER_TEMP/image-candidate")
           else
             source qualification/lib.sh
             chart=$(fetch_release "$CHART_VERSION" "$OUT")

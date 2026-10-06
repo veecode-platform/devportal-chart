@@ -50,6 +50,22 @@ Add `-f self_test=true` for a self-test. Both jobs download the candidate's
 `devportal-<version>.tgz` and its `.sha256` from the `chart-v<version>` release and check
 the checksum before they install anything, as the next-charts ingest does.
 
+To qualify an image before any chart pins it, dispatch the workflow with its tag instead:
+
+```bash
+gh workflow run qualification.yaml -R veecode-platform/devportal-chart -f image_tag=3.0.2-rc.1
+```
+
+The run resolves the tag of `docker.io/veecode/devportal` to its digest once, in the first
+job, and both jobs install the chart at the dispatched ref with that digest. The chart gets the
+version of the next patch with `-rc.0` (for example `1.0.2-rc.0` while the chart is 1.0.1). That
+version is never published; it only makes the newest final chart the previous one. The manifest
+records the digest the run qualified, so a release can promote a candidate whose digest a run
+already qualified without publishing a candidate chart.
+
+Every night at 04:17 UTC the workflow qualifies `edge` the same way, so a candidate built from
+`main` usually arrives qualified.
+
 The previous chart is the newest final `x.y.z` version in the
 [next-charts index](https://veecode-platform.github.io/next-charts/index.yaml) that
 is older than the candidate. For an `x.y.z-rc.N` candidate, the final `x.y.z`
@@ -60,7 +76,7 @@ release newer than the candidate. Its package is downloaded and checked the same
 
 | Job | What it does |
 |---|---|
-| Decide what the run qualifies | Compares the pull request with its base and outputs whether to run and whether the run is a self-test. A dispatch always runs. |
+| Decide what the run qualifies | Compares the pull request with its base and outputs whether to run and whether the run is a self-test. A dispatch or the nightly always runs; for an image, it also resolves the tag to the digest both jobs install. |
 | Sequence on KinD | Runs `sequence.sh`, described below. Uploads `qualification-sequence`, which holds the summary table, the logs, and the API responses of every step. |
 | Browser on KinD | Runs `browser/run.sh`, then runs the two vulnerability scans below. Uploads `qualification-browser` (the Playwright report, traces, screenshots, and the cluster logs) and `qualification-scan` (`trivy.json` and `scan-summary.md` of the image, and `face-defaults/` with one report per plugin artifact). |
 | Qualification | Passes only when every job the run decided on succeeded. |
