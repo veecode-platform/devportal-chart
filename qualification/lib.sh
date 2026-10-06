@@ -123,6 +123,24 @@ fetch_release() {
   echo "$dir/$package"
 }
 
+# Copies the chart at this checkout with another portal image, to qualify an image before any
+# chart pins it. Its version is the next patch's rc.0, which is never published, so the previous
+# final chart is the newest final in the index.
+image_candidate_chart() {
+  local tag=$1 digest=$2 dir=$3 version
+  [[ $digest =~ ^sha256:[a-f0-9]{64}$ ]] || fail "image digest must be sha256:<64 hex>, got '$digest'"
+  rm -rf "$dir"
+  mkdir -p "$dir"
+  cp -R "$HERE/../charts/backstage/." "$dir/"
+  version=$(yq '.version' "$dir/Chart.yaml")
+  version=$(awk -F. '{printf "%d.%d.%d-rc.0", $1, $2, $3 + 1}' <<< "${version%%-*}")
+  yq -i ".version = \"$version\"" "$dir/Chart.yaml"
+  yq -i ".upstream.backstage.image.tag = \"$tag\" | .upstream.backstage.image.digest = \"$digest\"" "$dir/values.yaml"
+  helm repo add bitnami https://charts.bitnami.com/bitnami > /dev/null 2>&1 || true
+  helm dependency build "$dir" > "$OUT/image-candidate-dependencies.log" 2>&1 || fail "could not build the dependencies of the image candidate chart"
+  echo "$dir"
+}
+
 previous_final() {
   local candidate=$1 cutoff=$1 v prev=
   [[ $candidate == *-rc.* ]] && cutoff=${candidate%%-rc.*}
