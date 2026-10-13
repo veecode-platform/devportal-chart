@@ -13,7 +13,7 @@ After preparing the Secret and `values.yaml` described there, install the newest
 helm install devportal veecode/devportal --version <version> -n devportal --create-namespace -f values.yaml
 ```
 
-Guest sign-in is enabled by default and maps the guest identity to the `ADMIN` user. This is useful for evaluation but dangerous for anything exposed; set `global.veecode.guestAuth.enabled: false` and configure a real authentication provider before exposing the portal.
+Guest sign-in is off by default. To evaluate the portal, set `global.veecode.guestAuth.enabled: true`. With it on, any visitor who signs in as a guest gets the `ADMIN` user. Do not expose a portal with guest sign-in on: configure a real authentication provider first.
 
 ## Upstream attribution and license
 

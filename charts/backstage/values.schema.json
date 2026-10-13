@@ -70,6 +70,16 @@
                         },
                         "image": {
                             "additionalProperties": false,
+                            "if": {
+                                "properties": {
+                                    "repository": {
+                                        "pattern": "@sha256$"
+                                    }
+                                },
+                                "required": [
+                                    "repository"
+                                ]
+                            },
                             "properties": {
                                 "registry": {
                                     "default": "quay.io",
@@ -77,15 +87,25 @@
                                     "type": "string"
                                 },
                                 "repository": {
-                                    "default": "veecode/plugin-catalog-index",
+                                    "default": "veecode/plugin-catalog-index@sha256",
                                     "title": "Catalog index image repository",
                                     "type": "string"
                                 },
                                 "tag": {
-                                    "default": "bs_1.52.0",
+                                    "default": "927f6c7c3fb838ac6f654a7ddc76c2fa9e57fdc077aaef30f678f076e96810ee",
                                     "title": "Catalog index image tag",
                                     "type": "string"
                                 }
+                            },
+                            "then": {
+                                "properties": {
+                                    "tag": {
+                                        "pattern": "^[0-9a-f]{64}$"
+                                    }
+                                },
+                                "required": [
+                                    "tag"
+                                ]
                             },
                             "title": "Catalog index image configuration",
                             "type": "object"

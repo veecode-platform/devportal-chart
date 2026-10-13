@@ -22,7 +22,7 @@ Keep these JSON keys stable because the release gate compares manifests from the
 | `chart_version` | Version embedded in the qualified chart package, including an optional `-rc.N` suffix. |
 | `chart_package_sha256` | Lowercase hexadecimal SHA-256 checksum of the exact chart `.tgz` package. |
 | `catalog_index_digest` | `sha256:` digest resolved from the catalog-index reference with `skopeo inspect`. |
-| `catalog_index_ref` | Exact `CATALOG_INDEX_IMAGE` value from the deployment, usually a moving tag. |
+| `catalog_index_ref` | Exact `CATALOG_INDEX_IMAGE` value from the deployment. From chart 1.0.4 it is the digest reference the chart pins; earlier charts used the moving tag. |
 
 For pull requests, the sequence packages the chart directory before installing it so the recorded checksum identifies the package used by Helm. For dispatches, `fetch_release` verifies the published package against its release checksum before writing the manifest.
 
@@ -160,7 +160,8 @@ index.
 `browser/run.sh` installs the candidate as release `devportal` in a new namespace, next to a
 PostgreSQL and a Keycloak whose realm and users the run creates. It then runs the specs in
 `browser/e2e`, adapted from redhat-developer/rhdh, which sign in as a guest and through
-Keycloak with the upstream library's `LoginHelper`. The exit code of `run.sh` is the result.
+Keycloak with the upstream library's `LoginHelper`. Guest sign-in is off by default, so
+`browser/values-oidc.yaml` sets `global.veecode.guestAuth.enabled: true`. The exit code of `run.sh` is the result.
 
 The two scans follow the specs and run even when they fail.
 
