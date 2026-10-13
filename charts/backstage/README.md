@@ -44,6 +44,12 @@ See [docs/product-face-overrides.md](../../docs/product-face-overrides.md) for h
 - Helm 3.10+ or [latest release](https://github.com/helm/helm/releases)
 - A PostgreSQL database. The chart ships no embedded database; it reads the connection from the `veecode-runtime-secrets` Secret.
 
+### BACKEND_SECRET
+
+`BACKEND_SECRET` is the static secret the portal's app config uses for service-to-service authentication (`backend.auth.externalAccess`). Store it under the `BACKEND_SECRET` key of the same `veecode-runtime-secrets` Secret that holds the database keys; the chart injects that Secret into the portal container. Generate a value with `openssl rand -hex 16`.
+
+The chart does not generate this key: `global.auth.backend.enabled` is `false`, so no `<release>-auth` Secret is created. Without the key, the backend plugins fail at startup.
+
 ## Usage
 
 Set `upstream.backstage.hostAliases` to add static host entries to the portal pod's `/etc/hosts`. The chart passes this Backstage value through directly.
@@ -200,10 +206,9 @@ Kubernetes: `>= 1.27.0-0`
 | orchestrator.sonataflowPlatform.resources.limits.memory |  | string | `"1Gi"` |
 | orchestrator.sonataflowPlatform.resources.requests.cpu |  | string | `"250m"` |
 | orchestrator.sonataflowPlatform.resources.requests.memory |  | string | `"64Mi"` |
-| permission.enabled |  | bool | `false` |
 | route | OpenShift Route parameters | object | `{"annotations":{},"enabled":false,"host":"{{ .Values.global.host }}","path":"/","tls":{"caCertificate":"","certificate":"","destinationCACertificate":"","enabled":true,"insecureEdgeTerminationPolicy":"Redirect","key":"","termination":"edge"},"wildcardPolicy":"None"}` |
 | route.annotations | Route specific annotations | object | `{}` |
-| route.enabled | Enable the creation of the route resource | bool | `false` |
+| route.enabled | Enable the creation of the route resource. Off by default: `route.openshift.io/v1` exists only on OpenShift, and the template has no API capability check, so a plain Kubernetes install with this set to true fails. Use `upstream.ingress` there. | bool | `false` |
 | route.host | Set the host attribute to a custom value. If not set, OpenShift will generate it, please make sure to match your baseUrl | string | `"{{ .Values.global.host }}"` |
 | route.path | Path that the router watches for, to route traffic for to the service. | string | `"/"` |
 | route.tls | Route TLS parameters <br /> Ref: https://docs.openshift.com/container-platform/4.9/networking/routes/secured-routes.html | object | `{"caCertificate":"","certificate":"","destinationCACertificate":"","enabled":true,"insecureEdgeTerminationPolicy":"Redirect","key":"","termination":"edge"}` |
@@ -216,7 +221,7 @@ Kubernetes: `>= 1.27.0-0`
 | route.tls.termination | Specify TLS termination. | string | `"edge"` |
 | route.wildcardPolicy | Wildcard policy if any for the route. Currently only 'Subdomain' or 'None' is allowed. | string | `"None"` |
 | test | Test pod parameters | object | `{"enabled":false,"image":{"registry":"quay.io","repository":"curl/curl","tag":"latest"},"injectTestNpmrcSecret":false}` |
-| test.enabled | Whether to enable the test-connection pod used for testing the Release using `helm test`. | bool | `false` |
+| test.enabled | Whether to enable the test-connection pod used for testing the Release using `helm test`. Off by default: the pod runs only on an explicit `helm test`, and its image (`test.image`) is the floating `latest` tag of `quay.io/curl/curl`, which a default install should not pull. | bool | `false` |
 | test.image.registry | Test connection pod image registry | string | `"quay.io"` |
 | test.image.repository | Test connection pod image repository. Note that the image needs to have both the `sh` and `curl` binaries in it. | string | `"curl/curl"` |
 | test.image.tag | Test connection pod image tag. Note that the image needs to have both the `sh` and `curl` binaries in it. | string | `"latest"` |

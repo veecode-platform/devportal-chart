@@ -39,6 +39,12 @@ See [docs/product-face-overrides.md](../../docs/product-face-overrides.md) for h
 - Helm 3.10+ or [latest release](https://github.com/helm/helm/releases)
 - A PostgreSQL database. The chart ships no embedded database; it reads the connection from the `veecode-runtime-secrets` Secret.
 
+### BACKEND_SECRET
+
+`BACKEND_SECRET` is the static secret the portal's app config uses for service-to-service authentication (`backend.auth.externalAccess`). Store it under the `BACKEND_SECRET` key of the same `veecode-runtime-secrets` Secret that holds the database keys; the chart injects that Secret into the portal container. Generate a value with `openssl rand -hex 16`.
+
+The chart does not generate this key: `global.auth.backend.enabled` is `false`, so no `<release>-auth` Secret is created. Without the key, the backend plugins fail at startup.
+
 ## Usage
 
 Set `upstream.backstage.hostAliases` to add static host entries to the portal pod's `/etc/hosts`. The chart passes this Backstage value through directly.
