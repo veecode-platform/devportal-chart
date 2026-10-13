@@ -204,6 +204,13 @@ class SchemaGuardTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn(f"value: mirror.example.test/{REPOSITORY}@sha256:{digest}", result.stdout)
 
+    def test_the_mirror_form_renders_the_default_digest_on_a_digest_repository(self):
+        shipped = (CHART / "values.yaml").read_text()
+        digest = yaml.safe_load(shipped)["global"]["catalogIndex"]["image"]["tag"]
+        result = self.render(repository="mirror/plugin-catalog-index@sha256")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn(f"value: quay.io/mirror/plugin-catalog-index@sha256:{digest}", result.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()
