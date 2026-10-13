@@ -34,7 +34,7 @@ if [ "$image_moved" = true ] || [ "$index_moved" = true ]; then
   [ "$index_moved" = false ] || say "The pinned catalog index changed."
   echo pins
 elif [ -n "$(git diff --name-only "$BASE" HEAD -- qualification .github/workflows/qualification.yaml)" ]; then
-  say "Only the qualification changed."
+  say "No pin moved, and the qualification changed."
   echo qualification
 else
   say "Neither a pinned image or catalog index nor the qualification changed."

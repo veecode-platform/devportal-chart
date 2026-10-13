@@ -69,6 +69,8 @@ move_image() {
   yq -i ".upstream.backstage.image.tag = \"3.0.4\" | .upstream.backstage.image.digest = \"$NEW_DIGEST\"" "$REPO/charts/backstage/values.yaml"
   printf '{"tag":"3.0.4","digest":"%s"}\n' "$NEW_DIGEST" > "$REPO/charts/backstage/values.schema.json"
 }
+move_image_digest() { yq -i ".upstream.backstage.image.digest = \"$NEW_DIGEST\"" "$REPO/charts/backstage/values.yaml"; }
+move_image_registry() { yq -i '.upstream.backstage.image.registry = "quay.io"' "$REPO/charts/backstage/values.yaml"; }
 move_index() { yq -i ".global.catalogIndex.image.tag = \"$(hex d)\"" "$REPO/charts/backstage/values.yaml"; }
 touch_qualification_file() { echo "# changed" >> "$REPO/qualification/sequence.sh"; }
 touch_workflow() { echo "# changed" >> "$REPO/.github/workflows/qualification.yaml"; }
@@ -103,11 +105,14 @@ check() {
 }
 
 check scope-image-changed move_image pr-scope.sh 0 pins "The pinned image changed." any
+check scope-image-digest-only move_image_digest pr-scope.sh 0 pins "The pinned image changed." any
+check scope-image-registry-only move_image_registry pr-scope.sh 0 pins "The pinned image changed." any
 check scope-index-changed move_index pr-scope.sh 0 pins "The pinned catalog index changed." any
 check scope-image-and-index-changed "move_image move_index" pr-scope.sh 0 pins "The pinned catalog index changed." any
 check scope-pin-and-qualification-changed "move_index touch_qualification_file" pr-scope.sh 0 pins "The pinned catalog index changed." any
-check scope-qualification-file-changed touch_qualification_file pr-scope.sh 0 qualification "Only the qualification changed." any
-check scope-workflow-changed touch_workflow pr-scope.sh 0 qualification "Only the qualification changed." any
+check scope-qualification-file-changed touch_qualification_file pr-scope.sh 0 qualification "No pin moved, and the qualification changed." any
+check scope-qualification-and-chart-changed "touch_unrelated touch_qualification_file" pr-scope.sh 0 qualification "No pin moved, and the qualification changed." any
+check scope-workflow-changed touch_workflow pr-scope.sh 0 qualification "No pin moved, and the qualification changed." any
 check scope-nothing-changed touch_unrelated pr-scope.sh 0 nothing "nor the qualification changed" any
 
 check prior-image-only move_image prior-qualification.sh 1 "" "no image qualification on main" asked
