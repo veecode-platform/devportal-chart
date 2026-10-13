@@ -1,7 +1,7 @@
 
 # VeeCode DevPortal Helm Chart
 
-![Version: 1.0.3](https://img.shields.io/badge/Version-1.0.3-informational?style=flat-square)
+![Version: 1.0.4](https://img.shields.io/badge/Version-1.0.4-informational?style=flat-square)
 ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
 
 A Helm chart for deploying VeeCode DevPortal, a VeeCode distribution of Backstage.
@@ -26,7 +26,7 @@ Helm repository.
 
 ```console
 helm repo add veecode https://veecode-platform.github.io/next-charts
-helm install devportal veecode/devportal --version 1.0.3 -n devportal --create-namespace -f values.yaml
+helm install devportal veecode/devportal --version 1.0.4 -n devportal --create-namespace -f values.yaml
 ```
 
 The [DevPortal 3.x install guide](https://docs-next.platform.vee.codes/devportal/installation-guide/v3-preview/intro/)
@@ -47,6 +47,15 @@ See [docs/product-face-overrides.md](../../docs/product-face-overrides.md) for h
 ## Usage
 
 Set `upstream.backstage.hostAliases` to add static host entries to the portal pod's `/etc/hosts`. The chart passes this Backstage value through directly.
+
+### Local evaluation without TLS
+
+Set `global.veecode.baseUrl.scheme` to `http` to update `app.baseUrl`, `backend.baseUrl`, and `backend.cors.origin` together. The default remains `https`; local evaluation does not require replacing `upstream.backstage.appConfig`.
+
+```console
+helm upgrade -i <release_name> veecode/devportal \
+  --set global.veecode.baseUrl.scheme=http
+```
 
 List the published versions and install the newest one:
 
@@ -163,6 +172,7 @@ Kubernetes: `>= 1.27.0-0`
 | global.lightspeed.secret.sourceFile | Bundled file used to populate the Secret's `stringData` keys. | string | `"secret.yaml"` |
 | global.lightspeed.sidecar.image | Full image reference for the Lightspeed Core sidecar. Override for disconnected environments. | string | `"quay.io/lightspeed-core/lightspeed-stack:0.5.3"` |
 | global.lightspeed.sidecar.resources | Resource requests/limits for the Lightspeed Core sidecar. | object | `{"limits":{"cpu":"1000m","memory":"2Gi"},"requests":{"cpu":"100m","memory":"512Mi"}}` |
+| global.veecode.baseUrl.scheme | Scheme used by app.baseUrl, backend.baseUrl, and backend.cors.origin. Set to `http` for local evaluation without TLS. | string | `"https"` |
 | global.veecode.branding | config chain (see extraAppConfig veecode-product), so these win. | object | `{"fullLogo":"","fullLogoWidth":180,"iconLogo":"","title":"VeeCode DevPortal"}` |
 | global.veecode.deployment.caBundle | Existing ConfigMap or Secret with the additional CA bundle. An empty name disables the volume, mount, and environment variable. | object | `{"key":"ca.crt","kind":"ConfigMap","name":""}` |
 | global.veecode.deployment.caBundle.key | Data key that contains the CA bundle. | string | `"ca.crt"` |

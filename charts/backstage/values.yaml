@@ -57,6 +57,9 @@ global:
       # -- Instead of generating a secret value, use the following value
       value: ""
   veecode:
+    baseUrl:
+      # -- Scheme used by app.baseUrl, backend.baseUrl, and backend.cors.origin. Set to `http` for local evaluation without TLS.
+      scheme: https
     # !!! SECURITY: this deliberately maps unauthenticated users to ADMIN.
     # !!! Set this single key to false before exposing the portal to real users;
     # !!! then configure a real provider (GitLab/GitHub OAuth). RBAC enforcement
@@ -321,11 +324,11 @@ upstream:
         providers: {}
       app:
         # Please update to match host in case you don't want to configure hostname via `global.clusterRouterBase` or `global.host` if not deploying on an openshift cluster.
-        baseUrl: 'https://{{- include "rhdh.hostname" . }}'
+        baseUrl: '{{ .Values.global.veecode.baseUrl.scheme }}://{{- include "rhdh.hostname" . }}'
       backend:
-        baseUrl: 'https://{{- include "rhdh.hostname" . }}'
+        baseUrl: '{{ .Values.global.veecode.baseUrl.scheme }}://{{- include "rhdh.hostname" . }}'
         cors:
-          origin: 'https://{{- include "rhdh.hostname" . }}'
+          origin: '{{ .Values.global.veecode.baseUrl.scheme }}://{{- include "rhdh.hostname" . }}'
         database:
           client: pg
           connection:

@@ -31,6 +31,29 @@
                     "type": "string",
                     "default": ""
                 },
+                "veecode": {
+                    "title": "VeeCode DevPortal settings.",
+                    "type": "object",
+                    "additionalProperties": true,
+                    "properties": {
+                        "baseUrl": {
+                            "title": "Scheme used by the default app and backend base URLs.",
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "scheme": {
+                                    "title": "Scheme used by app.baseUrl, backend.baseUrl, and backend.cors.origin. Use `http` for local evaluation without TLS.",
+                                    "type": "string",
+                                    "enum": [
+                                        "http",
+                                        "https"
+                                    ],
+                                    "default": "https"
+                                }
+                            }
+                        }
+                    }
+                },
                 "dynamic": {
                     "title": "Dynamic plugins configuration.",
                     "type": "object",

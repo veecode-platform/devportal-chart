@@ -411,6 +411,29 @@
                         "boolean",
                         "object"
                     ]
+                },
+                "veecode": {
+                    "additionalProperties": true,
+                    "properties": {
+                        "baseUrl": {
+                            "additionalProperties": false,
+                            "properties": {
+                                "scheme": {
+                                    "default": "https",
+                                    "enum": [
+                                        "http",
+                                        "https"
+                                    ],
+                                    "title": "Scheme used by app.baseUrl, backend.baseUrl, and backend.cors.origin. Use `http` for local evaluation without TLS.",
+                                    "type": "string"
+                                }
+                            },
+                            "title": "Scheme used by the default app and backend base URLs.",
+                            "type": "object"
+                        }
+                    },
+                    "title": "VeeCode DevPortal settings.",
+                    "type": "object"
                 }
             },
             "type": "object"
@@ -1524,7 +1547,7 @@
                         "appConfig": {
                             "default": {
                                 "app": {
-                                    "baseUrl": "https://{{- include \"rhdh.hostname\" . }}"
+                                    "baseUrl": "{{ .Values.global.veecode.baseUrl.scheme }}://{{- include \"rhdh.hostname\" . }}"
                                 },
                                 "auth": {
                                     "providers": {}
@@ -1541,9 +1564,9 @@
                                             }
                                         ]
                                     },
-                                    "baseUrl": "https://{{- include \"rhdh.hostname\" . }}",
+                                    "baseUrl": "{{ .Values.global.veecode.baseUrl.scheme }}://{{- include \"rhdh.hostname\" . }}",
                                     "cors": {
-                                        "origin": "https://{{- include \"rhdh.hostname\" . }}"
+                                        "origin": "{{ .Values.global.veecode.baseUrl.scheme }}://{{- include \"rhdh.hostname\" . }}"
                                     },
                                     "database": {
                                         "client": "pg",

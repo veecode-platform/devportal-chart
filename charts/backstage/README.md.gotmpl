@@ -43,6 +43,15 @@ See [docs/product-face-overrides.md](../../docs/product-face-overrides.md) for h
 
 Set `upstream.backstage.hostAliases` to add static host entries to the portal pod's `/etc/hosts`. The chart passes this Backstage value through directly.
 
+### Local evaluation without TLS
+
+Set `global.veecode.baseUrl.scheme` to `http` to update `app.baseUrl`, `backend.baseUrl`, and `backend.cors.origin` together. The default remains `https`; local evaluation does not require replacing `upstream.backstage.appConfig`.
+
+```console
+helm upgrade -i <release_name> veecode/devportal \
+  --set global.veecode.baseUrl.scheme=http
+```
+
 List the published versions and install the newest one:
 
 ```console
