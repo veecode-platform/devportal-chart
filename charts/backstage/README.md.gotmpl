@@ -196,7 +196,7 @@ upstream:
 
 ### Catalog Index Configuration
 
-The chart supports automatic plugin discovery through a catalog index OCI image. This is configured via `global.catalogIndex.image` (with `registry`, `repository`, and `tag` fields) and lets you use a pre-defined set of dynamic plugins.
+The chart supports automatic plugin discovery through a catalog index OCI image. This is configured via `global.catalogIndex.image` (with `registry`, `repository`, and `tag` fields) and lets you use a pre-defined set of dynamic plugins. By default the chart pins the VeeCode catalog index by digest (`repository` ends in `@sha256` and `tag` holds the digest) and re-pins it at every chart release.
 
 You can also configure additional catalog index images via `global.catalogIndex.extraImages` to make plugins from other sources discoverable in the Extensions UI. Each extra image contributes catalog entities only (no `dynamic-plugins.default.yaml` handling).
 

@@ -40,6 +40,15 @@ jobs:
           python -m pip install --quiet pyyaml
           python hack/check-image-pin.py charts/backstage
 
+      - name: Check that the pinned catalog index stays available
+        run: python hack/catalog-index-pin.py check
+
+      - name: Test the catalog index pin and its schema guard
+        run: |
+          helm repo add bitnami https://charts.bitnami.com/bitnami
+          helm dependency build charts/backstage
+          python hack/test-catalog-index-pin.py
+
       - name: Set up chart-testing
         uses: helm/chart-testing-action@6ec842c01de15ebb84c8627d2744a0c2f2755c9f # v2.8.0
         with:
