@@ -31,8 +31,8 @@ Run `qualification/test-release-helpers.sh` for the release version and checksum
 
 Two more tests need no cluster and no network, and the first job of the workflow runs them on every run:
 
-- `qualification/test-scope.sh` builds throwaway repositories and checks what a pull request asks the qualification to do (see below) in the cases of an image change, a catalog index change, both, a qualification file or the workflow only, and nothing, and that `prior-qualification.sh` refuses to skip a pull request that re-pins the catalog index.
-- `qualification/test-guest-check.sh` runs the sequence's guest sign-in check against a `curl` that answers like a portal with guest sign-in on and off.
+- `qualification/test-scope.sh` builds throwaway repositories and checks what a pull request asks the qualification to do (see below) in the cases of an image change, of only its digest or only its registry, a catalog index change, both, a qualification file or the workflow only, a qualification file with other chart changes, and nothing, and that `prior-qualification.sh` refuses to skip a pull request that re-pins the catalog index.
+- `qualification/test-guest-check.sh` runs the sequence's guest sign-in check against a `curl` that answers like a portal with guest sign-in on and off, and against one whose connection is refused.
 
 ## Run it
 
@@ -58,8 +58,12 @@ run qualifies:
 To qualify a published package, dispatch the workflow with the chart version:
 
 ```bash
-gh workflow run qualification.yaml -R veecode-platform/devportal-chart -f chart_version=0.1.25
+gh workflow run qualification.yaml -R veecode-platform/devportal-chart -f chart_version=1.0.4
 ```
+
+Use 1.0.4 or later. A chart older than 1.0.4 fails step 7 of the sequence by design: its
+default leaves guest sign-in on, so the upgrade cannot turn it off (see
+[What the sequence asserts](#what-the-sequence-asserts)).
 
 Add `-f self_test=true` for a self-test. Both jobs download the candidate's
 `devportal-<version>.tgz` and its `.sha256` from the `chart-v<version>` release and check
@@ -76,7 +80,8 @@ job, and both jobs install the chart at the dispatched ref with that digest. The
 version of the next patch with `-rc.0` (for example `1.0.2-rc.0` while the chart is 1.0.1). That
 version is never published; it only makes the newest final chart the previous one. The manifest
 records the digest the run qualified, so a release can promote a candidate whose digest a run
-already qualified without publishing a candidate chart.
+already qualified without publishing a candidate chart. The chart at that ref must be 1.0.4
+or later, for step 7 as above.
 
 Every night at 04:17 UTC the workflow qualifies `edge` the same way, so a candidate built from
 `main` usually arrives qualified.
@@ -145,7 +150,9 @@ release without `--reuse-values`. It asserts that:
 - the portal reports ready on `/.backstage/health/v1/readiness`;
 - `GET /api/auth/guest/refresh` no longer issues a token. The check does not pin the status
   the backend answers, only that no `backstageIdentity.token` comes back, and it records the
-  status in the table;
+  status in the table. It fails when no status comes back at all, as when the portal cannot be
+  reached, so an unreachable portal never passes. The response stays in the output directory
+  with its token blanked;
 - the ConfigMap `veecode-auth`, which carries the guest provider, is gone.
 
 Step 1 turns guest on with values, so the check does not depend on the default of the
@@ -252,7 +259,7 @@ and blocks the pull request.
 
 A dispatch takes `inject_failure`, which breaks one job on purpose:
 
-| Value | What it breaks | What goes red |
+| Value | What it breaks | What goes red, on a chart of 1.0.4 or later |
 |---|---|---|
 | `missing-plugin` | The sequence expects two plugins that the portal does not have: the good plugin gets another name, and the product face that the loaded-plugins check reads gets one more enabled entry. | Sequence on KinD, and Qualification. |
 | `failed-sign-in` | The specs sign in to Keycloak with a password that the realm does not hold. | Browser on KinD, and Qualification. |
@@ -261,15 +268,18 @@ Dispatch it with a self-test of a published version, for example:
 
 ```bash
 gh workflow run qualification.yaml -R veecode-platform/devportal-chart --ref BRANCH \
-  -f chart_version=0.1.25 -f self_test=true -f inject_failure=missing-plugin
+  -f chart_version=1.0.4 -f self_test=true -f inject_failure=missing-plugin
 ```
 
-The run must go red, and only the job that the value breaks. A dispatch's concurrency
-group holds its ref, `chart_version`, `self_test` and `inject_failure`, so an injected run,
-a self-test and a full run of the same version never cancel each other.
+Use a chart of 1.0.4 or later. On an older chart step 7 fails in the sequence job whatever
+the injection, so that job goes red for every value and the table no longer holds.
 
-The scan needs no injection: a dispatch without `self_test` of a chart whose image has a
-critical vulnerability with a fix goes red on the image scan step, and on nothing else.
+On a chart of 1.0.4 or later, the run must go red, and only the job that the value breaks.
+A dispatch's concurrency group holds its ref, `chart_version`, `self_test` and `inject_failure`,
+so an injected run, a self-test and a full run of the same version never cancel each other.
+
+The scan needs no injection: a dispatch without `self_test` of a chart of 1.0.4 or later whose
+image has a critical vulnerability with a fix goes red on the image scan step, and on nothing else.
 
 ## Run it on another cluster
 

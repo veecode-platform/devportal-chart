@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       chart_version:
-        description: Published devportal chart version to qualify, as x.y.z or x.y.z-rc.N (for example 1.0.0-rc.1). Set this or image_tag.
+        description: Published devportal chart version to qualify, as x.y.z or x.y.z-rc.N (for example 1.0.4). A chart older than 1.0.4 fails the guest sign-in step by design. Set this or image_tag.
         required: false
         type: string
       image_tag:
@@ -19,7 +19,7 @@ on:
         required: false
         type: string
       self_test:
-        description: Report the checks that need a change the candidate lacks as SKIP instead of failing them
+        description: Report the checks that need a change the candidate lacks as SKIP instead of failing them. The guest sign-in step is never skipped, so a chart older than 1.0.4 fails it.
         required: false
         type: boolean
         default: false
@@ -65,7 +65,7 @@ jobs:
           bash qualification/test-scope.sh
           bash qualification/test-guest-check.sh
 
-      - name: Compare the pinned image,the pinned catalog index and the qualification files with the base
+      - name: Compare the pinned image, the pinned catalog index and the qualification files with the base
         id: decide
         env:
           EVENT: ${{ github.event_name }}
@@ -118,7 +118,7 @@ jobs:
                 self_test=false
                 ;;
               qualification)
-                echo "Only the qualification changed: self-test it against the current chart."
+                echo "No pin moved, and the qualification changed: self-test it against the current chart."
                 run=true
                 self_test=true
                 ;;
