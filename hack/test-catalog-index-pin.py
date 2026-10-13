@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Tests hack/catalog-index-pin.py against a local registry that answers like quay.io, and
-the values schema guard that stops a tag from riding on a digest repository.
+the two values schema guards on global.catalogIndex.image: the forward guard rejects a tag
+that is not a digest on a digest repository, and the reverse guard rejects a digest tag on
+any other repository. The documented mirror form must still render.
 
 Run it from the repository root with the chart dependencies built (helm dependency build
 charts/backstage): python hack/test-catalog-index-pin.py
@@ -194,6 +196,13 @@ class SchemaGuardTest(unittest.TestCase):
         result = self.render(repository=REPOSITORY)
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("@sha256$", result.stderr)
+
+    def test_the_mirror_form_renders_the_default_digest_on_a_registry_override(self):
+        shipped = (CHART / "values.yaml").read_text()
+        digest = yaml.safe_load(shipped)["global"]["catalogIndex"]["image"]["tag"]
+        result = self.render(registry="mirror.example.test")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn(f"value: mirror.example.test/{REPOSITORY}@sha256:{digest}", result.stdout)
 
 
 if __name__ == "__main__":

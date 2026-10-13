@@ -51,11 +51,15 @@ global:
       tag: "bs_1.52.0_20261009T013836"
 ```
 
-The values schema rejects a `tag` that is not 64 hexadecimal digits while `repository` ends in `@sha256`. Helm then stops the install or upgrade with a schema error on `global.catalogIndex.image.tag`, instead of starting a pod that cannot pull the index. The schema also rejects the reverse: a `tag` of 64 hexadecimal digits while `repository` does not end in `@sha256`, which is the default digest tag with a mirror `repository` that drops the suffix. Helm then stops with a schema error on `global.catalogIndex.image.repository`. To use a mirror, set `registry` to the mirror host and keep the `@sha256` form in `repository`.
+The values schema rejects a `tag` that is not 64 hexadecimal digits while `repository` ends in `@sha256`. Helm then stops the install or upgrade with a schema error on `global.catalogIndex.image.tag`, instead of starting a pod that cannot pull the index. From chart 1.1.0, the schema also rejects the reverse: a `tag` of 64 hexadecimal digits while `repository` does not end in `@sha256`, which is the default digest tag with a mirror `repository` that drops the suffix. Helm then stops with a schema error on `global.catalogIndex.image.repository`. To use a mirror, set `registry` to the mirror host and keep the `@sha256` form in `repository`.
 
 #### Upgrading from a chart that installed the moving tag
 
-Before chart 1.0.4 the default `repository` had no `@sha256` and the default `tag` was the moving tag `bs_1.52.0`, so a values file that overrides only `tag`, such as a temporary pin to a timestamped tag, worked. From chart 1.0.4 the default `repository` ends in `@sha256`. An installation that overrides only `tag` must also set `repository: veecode/plugin-catalog-index` (the tag form above), or drop the override, before it moves to chart 1.0.4. Otherwise Helm rejects the upgrade with the schema error described above. The same applies to an installation that overrides only `repository` to a mirror without `@sha256`: the default digest tag then fails the reverse rule, so set `tag` to a `bs_` tag as well, or keep the `@sha256` form.
+Before chart 1.0.4 the default `repository` had no `@sha256` and the default `tag` was the moving tag `bs_1.52.0`, so a values file that overrides only `tag`, such as a temporary pin to a timestamped tag, worked. From chart 1.0.4 the default `repository` ends in `@sha256`. An installation that overrides only `tag` must also set `repository: veecode/plugin-catalog-index` (the tag form above), or drop the override, before it moves to chart 1.0.4. Otherwise Helm rejects the upgrade with the schema error described above.
+
+An installation that overrides only `repository` to a mirror without `@sha256` is different. Chart 1.0.4 accepts that values file and renders `<repository>:<digest>`, for example `quay.io/mirror/plugin-catalog-index:<digest>`. A mirror usually has no tag with that name, so the pod fails when it pulls the index, not at render time. Before you move to chart 1.0.4, set `tag` to a `bs_` tag, or keep the `@sha256` form in `repository`.
+
+From chart 1.1.0, the schema rejects that same override at render time, with a schema error on `global.catalogIndex.image.repository`. Use the same two remedies: set `tag` to a `bs_` tag, or keep the `@sha256` form in `repository`.
 
 ## Extra catalog index images
 
