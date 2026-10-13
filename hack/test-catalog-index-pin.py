@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-"""Tests hack/catalog-index-pin.py against a local registry that answers like quay.io.
+"""Tests hack/catalog-index-pin.py against a local registry that answers like quay.io, and
+the values schema guard that stops a tag from riding on a digest repository.
 
-Run it from the repository root: python hack/test-catalog-index-pin.py
+Run it from the repository root with the chart dependencies built (helm dependency build
+charts/backstage): python hack/test-catalog-index-pin.py
 """
 import http.server
 import json
@@ -170,6 +172,23 @@ class CatalogIndexPinTest(unittest.TestCase):
             content=values(f"{REPOSITORY}@sha256", CURRENT))
         self.assertEqual(result.returncode, 1)
         self.assertIn(f"no bs_<version>_<timestamp> tag points at sha256:{CURRENT}", result.stdout)
+
+
+class SchemaGuardTest(unittest.TestCase):
+    def render(self, **image):
+        sets = [f"--set=global.catalogIndex.image.{key}={value}" for key, value in image.items()]
+        return subprocess.run(["helm", "template", "t", str(CHART), *sets],
+                              capture_output=True, text=True)
+
+    def test_a_tag_on_a_digest_repository_is_rejected(self):
+        result = self.render(tag=ANCHOR)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("^[0-9a-f]{64}$", result.stderr)
+
+    def test_the_tag_form_renders_with_a_repository_without_a_digest(self):
+        result = self.render(repository=REPOSITORY, tag=ANCHOR)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn(f"value: quay.io/{REPOSITORY}:{ANCHOR}", result.stdout)
 
 
 if __name__ == "__main__":

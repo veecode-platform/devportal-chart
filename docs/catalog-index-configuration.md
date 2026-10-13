@@ -51,6 +51,12 @@ global:
       tag: "bs_1.52.0_20261009T013836"
 ```
 
+The values schema rejects a `tag` that is not 64 hexadecimal digits while `repository` ends in `@sha256`. Helm then stops the install or upgrade with a schema error on `global.catalogIndex.image.tag`, instead of starting a pod that cannot pull the index.
+
+#### Upgrading from a chart that installed the moving tag
+
+Before chart 1.0.4 the default `repository` had no `@sha256` and the default `tag` was the moving tag `bs_1.52.0`, so a values file that overrides only `tag`, such as a temporary pin to a timestamped tag, worked. From chart 1.0.4 the default `repository` ends in `@sha256`. An installation that overrides only `tag` must also set `repository: veecode/plugin-catalog-index` (the tag form above), or drop the override, before it moves to chart 1.0.4. Otherwise Helm rejects the upgrade with the schema error described above.
+
 ## Extra catalog index images
 
 You can configure additional catalog index images alongside the primary one using `global.catalogIndex.extraImages`. Each extra image contributes catalog entities only to the Extensions UI — only the primary `CATALOG_INDEX_IMAGE` is used for extracting and handling the `dynamic-plugins.default.yaml`.

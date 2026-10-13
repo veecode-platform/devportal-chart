@@ -70,6 +70,16 @@
                         },
                         "image": {
                             "additionalProperties": false,
+                            "if": {
+                                "properties": {
+                                    "repository": {
+                                        "pattern": "@sha256$"
+                                    }
+                                },
+                                "required": [
+                                    "repository"
+                                ]
+                            },
                             "properties": {
                                 "registry": {
                                     "default": "quay.io",
@@ -86,6 +96,16 @@
                                     "title": "Catalog index image tag",
                                     "type": "string"
                                 }
+                            },
+                            "then": {
+                                "properties": {
+                                    "tag": {
+                                        "pattern": "^[0-9a-f]{64}$"
+                                    }
+                                },
+                                "required": [
+                                    "tag"
+                                ]
                             },
                             "title": "Catalog index image configuration",
                             "type": "object"

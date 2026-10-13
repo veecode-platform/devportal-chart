@@ -142,6 +142,26 @@
                                     "type": "string",
                                     "default": "next"
                                 }
+                            },
+                            "if": {
+                                "properties": {
+                                    "repository": {
+                                        "pattern": "@sha256$"
+                                    }
+                                },
+                                "required": [
+                                    "repository"
+                                ]
+                            },
+                            "then": {
+                                "properties": {
+                                    "tag": {
+                                        "pattern": "^[0-9a-f]{64}$"
+                                    }
+                                },
+                                "required": [
+                                    "tag"
+                                ]
                             }
                         },
                         "extraImages": {
