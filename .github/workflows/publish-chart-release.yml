@@ -32,6 +32,9 @@ jobs:
           python -m pip install --quiet pyyaml
           python hack/check-image-pin.py charts/backstage
 
+      - name: Check that the pinned catalog index stays available
+        run: python hack/catalog-index-pin.py check
+
       - name: Package and validate the chart
         id: package
         env:

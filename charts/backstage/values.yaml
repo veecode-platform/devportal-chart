@@ -133,8 +133,10 @@ global:
   catalogIndex:
     image:
       registry: quay.io
-      repository: veecode/plugin-catalog-index
-      tag: "bs_1.52.0"
+      # Pinned by digest, as in the RHDH chart: `@sha256` ends the repository and `tag` holds the 64 hex
+      # digits, so the template still renders registry/repository:tag. Re-pin with hack/catalog-index-pin.py.
+      repository: veecode/plugin-catalog-index@sha256
+      tag: "927f6c7c3fb838ac6f654a7ddc76c2fa9e57fdc077aaef30f678f076e96810ee"
     # -- Extra catalog index images for additional plugin discovery in the Extensions UI.
     # Each item must include `registry`, `repository`, and `tag` fields; `name` is optional.
     # Only catalog entities are extracted from extra images (no `dynamic-plugins.default.yaml` handling).
@@ -503,13 +505,11 @@ upstream:
             # This following variable is required for orchestrator to startup properly.
           - name: MAX_ENTRY_SIZE
             value: "40000000"
-            # ADR-008 phase 2: the chart is the sole carrier of the index ref, consumed
-            # by a moving tag (global.catalogIndex.image) instead of a per-release
-            # digest pin — tenants no longer need a CATALOG_INDEX_IMAGE override.
-            # The registry also publishes timestamped tags (bs_<ver>_<ts>, e.g.
-            # bs_1.52.0_20260824T133841) for temporary pinning during an incident;
-            # roll back by setting global.catalogIndex.image.tag to one of those
-            # instead of "bs_1.52.0".
+            # The chart is the sole carrier of the index ref (global.catalogIndex.image),
+            # so tenants need no CATALOG_INDEX_IMAGE override. Each chart release pins
+            # the index by digest, which hack/catalog-index-pin.py re-pins and checks.
+            # To move to another index, set `tag` to another digest, or set `repository`
+            # to veecode/plugin-catalog-index and `tag` to a bs_<ver>_<ts> tag.
           - name: CATALOG_INDEX_IMAGE
             value: "{{ .Values.global.catalogIndex.image.registry }}/{{ .Values.global.catalogIndex.image.repository }}:{{ .Values.global.catalogIndex.image.tag }}"
           - name: CATALOG_ENTITIES_EXTRACT_DIR

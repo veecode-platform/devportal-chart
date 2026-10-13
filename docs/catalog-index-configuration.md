@@ -13,11 +13,34 @@ global:
       tag: "1.9"
 ```
 
-### VeeCode default: consumption by moving tag
+### VeeCode default: pinned by digest at each release
 
-The VeeCode distribution defaults `global.catalogIndex.image` to `quay.io/veecode/plugin-catalog-index:bs_1.52.0` — a mutable tag that the registry re-points as the index is rebuilt for that Backstage line. The chart is the only place this reference lives; per-tenant `CATALOG_INDEX_IMAGE` overrides are not needed.
+The VeeCode distribution pins `global.catalogIndex.image` by digest, the way the Red Hat Developer Hub chart pins its index. `repository` ends in `@sha256` and `tag` holds the 64 hexadecimal digits of the digest, so the chart installs `quay.io/veecode/plugin-catalog-index@sha256:<digest>`. A chart version always installs the same index, and a new index reaches a deployment through a new chart release. The chart is the only place this reference lives; per-tenant `CATALOG_INDEX_IMAGE` overrides are not needed.
 
-The registry also publishes immutable, timestamped tags in the form `bs_<backstage-version>_<timestamp>` (e.g. `bs_1.52.0_20260824T133841`) alongside the moving one. If an incident requires pinning to a known-good index build, set `global.catalogIndex.image.tag` to one of those timestamped tags instead of `bs_1.52.0`, then roll forward to the moving tag once resolved:
+Every chart release re-pins the index before the version is tagged:
+
+```bash
+python3 hack/catalog-index-pin.py pin
+```
+
+The command resolves the digest that the moving tag `bs_1.52.0` serves on quay.io, confirms that a timestamped tag `bs_<backstage-version>_<timestamp>` points at the same digest, and rewrites `repository` and `tag` in `charts/backstage/values.yaml`, and nothing else. Pass another tag to pin another Backstage line. Running it again changes nothing until the moving tag moves.
+
+`python3 hack/catalog-index-pin.py check` runs in every pull request and in the release workflow. It fails when the index is not pinned by digest, when quay.io does not serve the digest, or when no timestamped tag points at it. The timestamped tag is what keeps the digest available: it stays where it was created, while the moving tag moves on with every index build and the registry can garbage-collect a digest that only the moving tag held.
+
+#### Move a deployment to another index
+
+Override `tag` with another digest and keep the `@sha256` repository:
+
+```yaml
+global:
+  catalogIndex:
+    image:
+      registry: quay.io
+      repository: veecode/plugin-catalog-index@sha256
+      tag: "<the 64 hexadecimal digits of the other digest>"
+```
+
+Or use the tag form, with a repository that has no `@sha256` and a timestamped tag:
 
 ```yaml
 global:
@@ -25,7 +48,7 @@ global:
     image:
       registry: quay.io
       repository: veecode/plugin-catalog-index
-      tag: "bs_1.52.0_20260824T133841" # temporary pin, roll back to "bs_1.52.0" after
+      tag: "bs_1.52.0_20261009T013836"
 ```
 
 ## Extra catalog index images

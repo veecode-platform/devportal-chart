@@ -127,7 +127,7 @@ Kubernetes: `>= 1.27.0-0`
 | global.auth.backend.enabled | Enable backend service to service authentication, unless configured otherwise it generates a secret value | bool | `false` |
 | global.auth.backend.existingSecret | Instead of generating a secret value, refer to existing secret | string | `""` |
 | global.auth.backend.value | Instead of generating a secret value, use the following value | string | `""` |
-| global.catalogIndex | Catalog index configuration for automatic plugin discovery. The `install-dynamic-plugins.py` script pulls this image if the `CATALOG_INDEX_IMAGE` environment variable is set. The `dynamic-plugins.default.yaml` file will be extracted and written to `dynamic-plugins-root` volume mount. | object | `{"extraImages":[],"image":{"registry":"quay.io","repository":"veecode/plugin-catalog-index","tag":"bs_1.52.0"}}` |
+| global.catalogIndex | Catalog index configuration for automatic plugin discovery. The `install-dynamic-plugins.py` script pulls this image if the `CATALOG_INDEX_IMAGE` environment variable is set. The `dynamic-plugins.default.yaml` file will be extracted and written to `dynamic-plugins-root` volume mount. | object | `{"extraImages":[],"image":{"registry":"quay.io","repository":"veecode/plugin-catalog-index@sha256","tag":"927f6c7c3fb838ac6f654a7ddc76c2fa9e57fdc077aaef30f678f076e96810ee"}}` |
 | global.catalogIndex.extraImages | Extra catalog index images for additional plugin discovery in the Extensions UI. Each item must include `registry`, `repository`, and `tag` fields; `name` is optional. Only catalog entities are extracted from extra images (no `dynamic-plugins.default.yaml` handling). | list | `[]` |
 | global.clusterRouterBase | Shorthand for users who do not want to specify a custom HOSTNAME. Used ONLY with the DEFAULT upstream.backstage.appConfig value and with OCP Route enabled. | string | `"apps.example.com"` |
 | global.dynamic.includes[0] |  | string | `"dynamic-plugins.default.yaml"` |
@@ -307,7 +307,7 @@ upstream:
 
 ### Catalog Index Configuration
 
-The chart supports automatic plugin discovery through a catalog index OCI image. This is configured via `global.catalogIndex.image` (with `registry`, `repository`, and `tag` fields) and lets you use a pre-defined set of dynamic plugins.
+The chart supports automatic plugin discovery through a catalog index OCI image. This is configured via `global.catalogIndex.image` (with `registry`, `repository`, and `tag` fields) and lets you use a pre-defined set of dynamic plugins. By default the chart pins the VeeCode catalog index by digest (`repository` ends in `@sha256` and `tag` holds the digest) and re-pins it at every chart release.
 
 You can also configure additional catalog index images via `global.catalogIndex.extraImages` to make plugins from other sources discoverable in the Extensions UI. Each extra image contributes catalog entities only (no `dynamic-plugins.default.yaml` handling).
 
