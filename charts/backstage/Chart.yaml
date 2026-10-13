@@ -43,7 +43,7 @@ sources:
 # to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
 # VeeCode owns this chart version independently from the upstream chart version recorded above.
-version: 1.0.3
+version: 1.0.4
 # 0.1.9: the marketplace pre-step sees the operator's appConfig. The init
 #  container's regenerate-extensions-install.js read only the image-baked
 #  app-configs, so `backend.database.prefix` (declared in the deployment's own
@@ -128,4 +128,10 @@ version: 1.0.3
 # 1.0.1: image -> 3.0.1, with tag, digest and appVersion moved together (release; same digest as 3.0.1-rc.1).
 # 1.0.2: image -> 3.0.2 (proxy-addr 2.0.8, vm2 3.12.2), with tag, digest and appVersion moved together (release; same digest as the qualified 3.0.2-rc.1).
 # 1.0.3: image -> 3.0.3 (the face pins the five default backend plugins rebuilt with proxy-addr 2.0.8), with tag, digest and appVersion moved together (release; same digest as the qualified 3.0.3-rc.1).
+# 1.0.4: install defaults, image stays 3.0.3. The plugin catalog index is pinned by digest at each release, as in the RHDH product chart
+#  (repository veecode/plugin-catalog-index@sha256, tag = digest; hack/catalog-index-pin.py re-pins it and CI checks it), so a new
+#  index reaches installs only through a chart release. Guest sign-in is OFF by default: set global.veecode.guestAuth.enabled: true
+#  to evaluate (it maps every guest to the admin user). Values that override only global.catalogIndex.image.tag must also set the
+#  repository; the values schema rejects that combination. The README documents BACKEND_SECRET, the unused permission.enabled
+#  key is gone, and the Route and helm test stay off with the reason written.
 appVersion: 3.0.3

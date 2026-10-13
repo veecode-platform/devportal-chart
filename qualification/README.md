@@ -22,7 +22,7 @@ Keep these JSON keys stable because the release gate compares manifests from the
 | `chart_version` | Version embedded in the qualified chart package, including an optional `-rc.N` suffix. |
 | `chart_package_sha256` | Lowercase hexadecimal SHA-256 checksum of the exact chart `.tgz` package. |
 | `catalog_index_digest` | `sha256:` digest resolved from the catalog-index reference with `skopeo inspect`. |
-| `catalog_index_ref` | Exact `CATALOG_INDEX_IMAGE` value from the deployment, usually a moving tag. |
+| `catalog_index_ref` | Exact `CATALOG_INDEX_IMAGE` value from the deployment. From chart 1.0.4 it is the digest reference the chart pins; earlier charts used the moving tag. |
 
 For pull requests, the sequence packages the chart directory before installing it so the recorded checksum identifies the package used by Helm. For dispatches, `fetch_release` verifies the published package against its release checksum before writing the manifest.
 

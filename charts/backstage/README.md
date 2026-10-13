@@ -1,7 +1,7 @@
 
 # VeeCode DevPortal Helm Chart
 
-![Version: 1.0.3](https://img.shields.io/badge/Version-1.0.3-informational?style=flat-square)
+![Version: 1.0.4](https://img.shields.io/badge/Version-1.0.4-informational?style=flat-square)
 ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
 
 A Helm chart for deploying VeeCode DevPortal, a VeeCode distribution of Backstage.
@@ -26,7 +26,7 @@ Helm repository.
 
 ```console
 helm repo add veecode https://veecode-platform.github.io/next-charts
-helm install devportal veecode/devportal --version 1.0.3 -n devportal --create-namespace -f values.yaml
+helm install devportal veecode/devportal --version 1.0.4 -n devportal --create-namespace -f values.yaml
 ```
 
 The [DevPortal 3.x install guide](https://docs-next.platform.vee.codes/devportal/installation-guide/v3-preview/intro/)
@@ -75,7 +75,8 @@ helm test <release_name>
 
 This will run a simple Pod in the cluster to check that the application deployed is up and running.
 
-You can control whether to disable this test pod or you can also customize the image it leverages.
+This chart ships the test pod off (`test.enabled: false`): its default image is `quay.io/curl/curl:latest`, which is not pinned.
+To run it, set `test.enabled: true` and pin `test.image.tag`.
 See the `test.enabled` and `test.image` parameters in the [`values.yaml`](./values.yaml) file.
 
 > **Tip**: Disabling the test pod will not prevent the `helm test` command from passing later on. It will simply report that no test suite is available.
@@ -84,11 +85,12 @@ Below are a few examples:
 
 <details>
 
-<summary>Disabling the test pod</summary>
+<summary>Enabling the test pod</summary>
 
 ```sh
 helm install <release_name> <repo_or_oci_registry> \
-  --set test.enabled=false
+  --set test.enabled=true \
+  --set test.image.tag=<pinned_curl_version>
 ```
 
 </details>
@@ -269,7 +271,7 @@ Additionally this chart enhances the upstream Backstage chart with following Ope
 
 This chart offers a drop-in replacement for the `Ingress` resource already provided by the upstream chart via an OpenShift `Route`.
 
-OpenShift routes are enabled by default. In order to use the chart without it, please set `route.enabled` to `false` and switch to the `Ingress` resource via `upstream.ingress` values.
+This chart ships the Route off (`route.enabled: false`) and targets plain Kubernetes, where `route.openshift.io/v1` does not exist. Use the `Ingress` resource via `upstream.ingress` values. On OpenShift, set `route.enabled` to `true` instead.
 
 Routes can be further configured via the `route` field.
 
