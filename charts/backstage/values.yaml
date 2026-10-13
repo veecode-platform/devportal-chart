@@ -702,7 +702,7 @@ route:
     insecureEdgeTerminationPolicy: "Redirect"
 # -- Test pod parameters
 test:
-  # -- Whether to enable the test-connection pod used for testing the Release using `helm test`. Off by default: the pod runs only on an explicit `helm test`, and its image (`test.image`) is the floating `latest` tag of `quay.io/curl/curl`, which a default install should not pull.
+  # -- Whether to enable the test-connection pod used for testing the Release using `helm test`. Off by default: enabling it makes `helm test` run `quay.io/curl/curl:latest`, an unpinned image; set `test.image.tag` to a fixed version when you enable it.
   enabled: false
   image:
     # -- Test connection pod image registry

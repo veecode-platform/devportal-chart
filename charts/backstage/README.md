@@ -221,7 +221,7 @@ Kubernetes: `>= 1.27.0-0`
 | route.tls.termination | Specify TLS termination. | string | `"edge"` |
 | route.wildcardPolicy | Wildcard policy if any for the route. Currently only 'Subdomain' or 'None' is allowed. | string | `"None"` |
 | test | Test pod parameters | object | `{"enabled":false,"image":{"registry":"quay.io","repository":"curl/curl","tag":"latest"},"injectTestNpmrcSecret":false}` |
-| test.enabled | Whether to enable the test-connection pod used for testing the Release using `helm test`. Off by default: the pod runs only on an explicit `helm test`, and its image (`test.image`) is the floating `latest` tag of `quay.io/curl/curl`, which a default install should not pull. | bool | `false` |
+| test.enabled | Whether to enable the test-connection pod used for testing the Release using `helm test`. Off by default: enabling it makes `helm test` run `quay.io/curl/curl:latest`, an unpinned image; set `test.image.tag` to a fixed version when you enable it. | bool | `false` |
 | test.image.registry | Test connection pod image registry | string | `"quay.io"` |
 | test.image.repository | Test connection pod image repository. Note that the image needs to have both the `sh` and `curl` binaries in it. | string | `"curl/curl"` |
 | test.image.tag | Test connection pod image tag. Note that the image needs to have both the `sh` and `curl` binaries in it. | string | `"latest"` |
