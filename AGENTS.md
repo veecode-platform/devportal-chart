@@ -34,7 +34,8 @@ ct lint --config ct-lint.yaml --target-branch main
   must serve that digest, and a `bs_<version>_<timestamp>` tag must point at it:
   nothing re-points that tag, so the registry keeps the digest after the moving
   tag moves on. `hack/catalog-index-pin.py check` enforces both, and the values
-  schema rejects a tag that is not a digest on a `@sha256` repository.
+  schema rejects a tag that is not a digest on a `@sha256` repository, and a
+  digest tag on any other repository.
 - `global.dynamic.includes` keeps `dynamic-plugins.default.yaml` and
   `/opt/app-root/src/dynamic-plugins.veecode.yaml`. The values schema rejects a
   list without them, including in the CI values.
