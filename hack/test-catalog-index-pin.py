@@ -190,6 +190,11 @@ class SchemaGuardTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn(f"value: quay.io/{REPOSITORY}:{ANCHOR}", result.stdout)
 
+    def test_a_default_digest_tag_on_a_repository_without_a_digest_is_rejected(self):
+        result = self.render(repository=REPOSITORY)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("@sha256$", result.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()
