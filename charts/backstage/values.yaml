@@ -1,6 +1,4 @@
 nameOverride: developer-hub
-permission:
-  enabled: false
 kubernetesPlugin:
   rbac:
     # -- Grant the chart's service account read-only access used by the Kubernetes plugin.
@@ -676,7 +674,7 @@ upstream:
 route:
   # -- Route specific annotations
   annotations: {}
-  # -- Enable the creation of the route resource
+  # -- Enable the creation of the route resource. Off by default: `route.openshift.io/v1` exists only on OpenShift, and the template has no API capability check, so a plain Kubernetes install with this set to true fails. Use `upstream.ingress` there.
   enabled: false
   # -- Set the host attribute to a custom value. If not set, OpenShift will generate it, please make sure to match your baseUrl
   host: "{{ .Values.global.host }}"
@@ -705,7 +703,7 @@ route:
     insecureEdgeTerminationPolicy: "Redirect"
 # -- Test pod parameters
 test:
-  # -- Whether to enable the test-connection pod used for testing the Release using `helm test`.
+  # -- Whether to enable the test-connection pod used for testing the Release using `helm test`. Off by default: enabling it makes `helm test` run `quay.io/curl/curl:latest`, an unpinned image; set `test.image.tag` to a fixed version when you enable it.
   enabled: false
   image:
     # -- Test connection pod image registry
