@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Decides whether a pull request that moves the pinned image is a release pull request whose
-# image is already qualified, so the run need not qualify the same chart again.
+# Decides whether a pull request that moves the pinned image or catalog index is a release pull
+# request whose image is already qualified, so the run need not qualify the same chart again.
 #
 #   prior-qualification.sh BASE_SHA
 #
@@ -8,7 +8,8 @@
 #   - against BASE_SHA, the pull request changes only release fields under charts/backstage:
 #     Chart.yaml version and appVersion, the image tag and digest in values.yaml, the schema
 #     defaults that mirror them, and the generated README.md; nothing under qualification/
-#     or in this workflow changes;
+#     or in this workflow changes, and the pinned catalog index stays as it is, because an
+#     image qualification tested the index of the chart it ran with, not a new one;
 #   - a successful run, newest first among the last 50 on main, qualified this digest as an
 #     image (an image_tag dispatch or the nightly), not a published chart: its scope job logged
 #     "Qualify the image ... at <digest>", and its manifest recorded the same digest;
@@ -37,6 +38,8 @@ base_file() { git show "$BASE:$CHART/$1"; }
 same() { [ "$(base_file "$1" | yq -o=json -I=0 "$2")" = "$(yq -o=json -I=0 "$2" "$CHART/$1")" ]; }
 same Chart.yaml 'del(.version, .appVersion)' ||
   { say "Chart.yaml changes more than version and appVersion"; exit 1; }
+same values.yaml '.global.catalogIndex.image' ||
+  { say "values.yaml re-pins the catalog index, which no earlier image qualification covered"; exit 1; }
 same values.yaml 'del(.upstream.backstage.image.tag, .upstream.backstage.image.digest)' ||
   { say "values.yaml changes more than the image tag and digest"; exit 1; }
 

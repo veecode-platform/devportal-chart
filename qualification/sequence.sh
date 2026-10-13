@@ -252,5 +252,22 @@ log "$S6"
 restart_portal s6
 observe s6 "$S6" absent previous
 
+S7="7 upgrade to $CAND with values that omit guestAuth"
+log "$S7"
+check_guest_signin "$S7" "guest sign-in issues a token on $PREV before the upgrade" yes
+yq 'del(.global.veecode.guestAuth)' "$VALUES" > "$OUT/values-guest-unset.yaml"
+assert "$S7" "the upgrade values do not set guestAuth" "" "global.veecode: $(yq -o=json -I=0 '.global.veecode' "$OUT/values-guest-unset.yaml")" \
+  test "$(yq '.global.veecode.guestAuth' "$OUT/values-guest-unset.yaml")" = null
+helm upgrade "$RELEASE" "$CANDIDATE_CHART" -n "$NS" -f "$OUT/values-guest-unset.yaml" --timeout 20m > "$OUT/helm-upgrade-guest-unset.log" 2>&1
+wait_portal upgrade-guest-unset
+log_resources "$S7"
+port_forward
+ready=$(curl -s --max-time 20 -o /dev/null -w '%{http_code}' "$URL/.backstage/health/v1/readiness") || ready=none
+assert "$S7" "the portal reports ready" "" "HTTP $ready" test "$ready" = 200
+check_guest_signin "$S7" "guest sign-in no longer issues a token" no
+configmaps=$("${K[@]}" get configmap -o name)
+guest_fragment=$(grep -cx 'configmap/veecode-auth' <<< "$configmaps" || true)
+assert "$S7" "the chart no longer delivers the guest sign-in fragment" "" "$guest_fragment ConfigMap veecode-auth" test "$guest_fragment" = 0
+
 DONE=true
 [ "$FAILED" -eq 0 ]

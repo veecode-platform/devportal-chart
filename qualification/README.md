@@ -4,7 +4,8 @@ The qualification installs a devportal chart candidate on throwaway KinD cluster
 checks that it survives what a release puts it through. Two jobs run in parallel. The
 sequence job checks that the marketplace survives an upgrade from the previous chart, a
 marketplace plugin whose image does not exist, restarts, and a rollback that restores the
-database. The browser job installs the candidate fresh, runs the browser specs, and scans
+database, and that an upgrade with values that omit `guestAuth` ends with guest sign-in off.
+The browser job installs the candidate fresh, runs the browser specs, and scans
 its image and the plugin artifacts its product face enables. A last job, `Qualification`, turns
 their results into one check.
 [`qualification.yaml`](../.github/workflows/qualification.yaml) runs it on GitHub Actions.
@@ -28,20 +29,28 @@ For pull requests, the sequence packages the chart directory before installing i
 
 Run `qualification/test-release-helpers.sh` for the release version and checksum fixtures. The tests use local `file://` inputs and do not dispatch the full qualification.
 
+Two more tests need no cluster and no network, and the first job of the workflow runs them on every run:
+
+- `qualification/test-scope.sh` builds throwaway repositories and checks what a pull request asks the qualification to do (see below) in the cases of an image change, a catalog index change, both, a qualification file or the workflow only, and nothing, and that `prior-qualification.sh` refuses to skip a pull request that re-pins the catalog index.
+- `qualification/test-guest-check.sh` runs the sequence's guest sign-in check against a `curl` that answers like a portal with guest sign-in on and off.
+
 ## Run it
 
 The workflow runs on every pull request against `main`, and its first job decides what the
 run qualifies:
 
-- A pull request that changes `upstream.backstage.image` in
-  `charts/backstage/values.yaml` qualifies its chart, unless it is a release pull request
-  whose image is already qualified. `prior-qualification.sh` checks that the pull request
-  changes only the release fields (version, appVersion, image tag and digest, the schema
-  defaults that mirror them, the generated README), and that a successful run recorded this
-  digest with the same `charts/backstage` as the base, which is what an `image_tag` dispatch
-  before the release does. The two jobs are then skipped, the job summary links that run,
-  and `Qualification` passes.
-- A pull request that changes `qualification/` or the workflow, and not the image,
+- A pull request that changes a pin in `charts/backstage/values.yaml`, the portal image
+  (`upstream.backstage.image`) or the catalog index (`global.catalogIndex.image`), qualifies
+  its chart, unless it is a release pull request whose image is already qualified.
+  `qualification/pr-scope.sh` makes that comparison with the base. `prior-qualification.sh`
+  checks that the pull request changes only the release fields (version, appVersion, image
+  tag and digest, the schema defaults that mirror them, the generated README), and that a
+  successful run recorded this digest with the same `charts/backstage` as the base, which is
+  what an `image_tag` dispatch before the release does. The two jobs are then skipped, the job
+  summary links that run, and `Qualification` passes. A pull request that re-pins the catalog
+  index is never skipped: an image qualification tested the index its chart pinned at the time,
+  not the new one, so a release pull request that also re-pins the index runs in full.
+- A pull request that changes `qualification/` or the workflow, and neither pin,
   self-tests the qualification against its chart.
 - Any other pull request has nothing to qualify. The two jobs are skipped and
   `Qualification` passes.
@@ -82,14 +91,14 @@ release newer than the candidate. Its package is downloaded and checked the same
 
 | Job | What it does |
 |---|---|
-| Decide what the run qualifies | Compares the pull request with its base and outputs whether to run and whether the run is a self-test. A dispatch or the nightly always runs; for an image, it also resolves the tag to the digest both jobs install. |
+| Decide what the run qualifies | Runs the two tests above, compares the pull request with its base (`pr-scope.sh`), and outputs whether to run and whether the run is a self-test. A dispatch or the nightly always runs; for an image, it also resolves the tag to the digest both jobs install. |
 | Sequence on KinD | Runs `sequence.sh`, described below. Uploads `qualification-sequence`, which holds the summary table, the logs, and the API responses of every step. |
 | Browser on KinD | Runs `browser/run.sh`, then runs the two vulnerability scans below. Uploads `qualification-browser` (the Playwright report, traces, screenshots, and the cluster logs) and `qualification-scan` (`trivy.json` and `scan-summary.md` of the image, and `face-defaults/` with one report per plugin artifact). |
 | Qualification | Passes only when every job the run decided on succeeded. |
 
 ## What the sequence asserts
 
-The sequence has six steps. After each one it checks that:
+The sequence has seven steps. After each of the first six it checks that:
 
 - the good plugin is loaded, or absent, as the step expects, in
   `GET /api/extensions/loaded-plugins`;
@@ -115,6 +124,7 @@ The sequence has six steps. After each one it checks that:
 | 4 | Restarts the candidate twice. | loaded (`prestep-skip`) | The pre-step skips the broken package (`prestep-skip`). The broken package is in `failedInstalls`, and the good row holds `resolved_digest`, read with psql (`marketplace-backend`). |
 | 5 | Stops the portal, restores the backup, and rolls back to revision 1. Then uninstalls the good plugin. | loaded | The broken package's row is gone, and the good row is stored as disabled. |
 | 6 | Restarts the portal. | absent | |
+| 7 | Upgrades to the candidate again, with values that omit `guestAuth`. | | Guest sign-in turns off, see below. |
 
 The good plugin is an OCI package of the index whose reference has no `!` plugin path.
 A bundled plugin cannot hold a digest, so it could never satisfy the `resolved_digest`
@@ -122,6 +132,26 @@ check.
 
 Step 6 shows that the marketplace change survived the restart, which only holds when
 the marketplace stores its state in the database.
+
+Step 7 is the upgrade a user gets from a chart that had guest sign-in on by default: the
+values carry no `guestAuth`, so the chart default (off from 1.0.4) must apply. Steps 1 to 6
+keep `global.veecode.guestAuth.enabled: true` in `values/sequence.yaml`, because `lib.sh`
+takes its API token from the guest sign-in. Step 7 derives its values from that file with
+`yq 'del(.global.veecode.guestAuth)'`, so the two differ in that key alone, and upgrades the
+release without `--reuse-values`. It asserts that:
+
+- guest sign-in issued a token before the upgrade, so the step shows a change from on to off;
+- the upgrade values do not set `guestAuth`;
+- the portal reports ready on `/.backstage/health/v1/readiness`;
+- `GET /api/auth/guest/refresh` no longer issues a token. The check does not pin the status
+  the backend answers, only that no `backstageIdentity.token` comes back, and it records the
+  status in the table;
+- the ConfigMap `veecode-auth`, which carries the guest provider, is gone.
+
+Step 1 turns guest on with values, so the check does not depend on the default of the
+previous chart: once 1.0.4 is the previous chart, its default is already off and the step
+still goes from on to off. No tag skips it in a self-test. A candidate older than 1.0.4, such
+as a dispatch of a published older version, leaves guest on by default and fails it.
 
 `steps.log` records how many seconds the portal took to become ready after each change.
 
@@ -144,7 +174,7 @@ A full run treats them like every other check.
 The image scan has no tag. A self-test qualifies the qualification, not an image, so its
 scan runs in report mode; a fresh vulnerability in the pinned image would otherwise turn a
 pull request red that changed nothing about it. A run that qualifies a candidate (a pull
-request that changes the pinned image, or a dispatch without `self_test`) blocks.
+request that changes the pinned image or catalog index, or a dispatch without `self_test`) blocks.
 
 ## The broken package
 
