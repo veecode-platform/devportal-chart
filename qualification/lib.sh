@@ -280,25 +280,30 @@ connect() {
   fail "the portal did not issue a guest token"
 }
 
-# Succeeds when the guest sign-in issues a token. Sets GUEST_STATUS to the HTTP status it answered.
+# Succeeds when the guest sign-in issues a token. Sets GUEST_STATUS to the HTTP status it answered,
+# or to none when no answer came back. The body stays in $OUT/guest-refresh-$1.json, with the token
+# blanked so that the artifact holds no credential.
 guest_signin_issues_token() {
-  local body
-  body=$(mktemp)
-  # shellcheck disable=SC2034 # sequence.sh reads it.
+  local body=$OUT/guest-refresh-$1.json issued=false
   GUEST_STATUS=$(curl -s --max-time 20 -o "$body" -w '%{http_code}' -H 'X-Requested-With: XMLHttpRequest' "$URL/api/auth/guest/refresh") || GUEST_STATUS=none
   if jq -e '(.backstageIdentity.token // "") | length > 0' "$body" > /dev/null 2>&1; then
-    rm -f "$body"
-    return 0
+    issued=true
   fi
-  rm -f "$body"
-  return 1
+  sed -i -E 's/("token" *: *")[^"]*/\1redacted/' "$body" 2> /dev/null || true
+  [ "$issued" = true ]
+}
+
+# Passes when the answer is the one the check wants and the portal answered at all: a refused or
+# timed-out request is no sign that the guest sign-in refuses a token.
+guest_check_holds() {
+  [ "$1" = "$2" ] && [[ $GUEST_STATUS =~ ^[0-9]{3}$ ]]
 }
 
 # $2 describes the check, $3 is yes when the guest sign-in must issue a token and no when it must not.
 check_guest_signin() {
   local issued
-  guest_signin_issues_token && issued=yes || issued=no
-  assert "$1" "$2" "" "HTTP $GUEST_STATUS" test "$issued" = "$3"
+  guest_signin_issues_token "$3" && issued=yes || issued=no
+  assert "$1" "$2" "" "HTTP $GUEST_STATUS" guest_check_holds "$issued" "$3"
 }
 
 api() { curl -s --fail -H "Authorization: Bearer $TOKEN" "$URL/api/extensions/$1"; }
