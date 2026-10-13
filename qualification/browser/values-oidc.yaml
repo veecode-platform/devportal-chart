@@ -6,6 +6,10 @@ route:
   enabled: false
 global:
   host: localhost
+  # The specs sign in as the guest (e2e/support/fixtures.ts) as well as through OIDC.
+  veecode:
+    guestAuth:
+      enabled: true
   dynamic:
     plugins:
       - package: ./dynamic-plugins/dist/backstage-community-plugin-catalog-backend-module-keycloak-dynamic

@@ -169,7 +169,7 @@ Kubernetes: `>= 1.27.0-0`
 | global.veecode.deployment.caBundle.kind | Kubernetes resource kind that contains the bundle. | string | `"ConfigMap"` |
 | global.veecode.deployment.caBundle.name | Name of the ConfigMap or Secret. Empty disables this setting. | string | `""` |
 | global.veecode.deployment.progressDeadlineSeconds | Positive Deployment rollout deadline in seconds. Zero leaves the field absent and keeps the Kubernetes default of 600 seconds. | int | `0` |
-| global.veecode.guestAuth.enabled |  | bool | `true` |
+| global.veecode.guestAuth.enabled | Sign visitors in as the guest, mapped to user:default/admin. Evaluation only. | bool | `false` |
 | global.veecode.preInstallCommand |  | string | `"node regenerate-extensions-install.js --config app-config.yaml --config app-config.example.yaml --config app-config.example.production.yaml --config app-config-from-configmap.yaml && node merge-dynamic-plugins.js"` |
 | global.veecode.support.docsUrl |  | string | `"https://github.com/veecode-platform/support/discussions"` |
 | global.veecode.support.subtitle |  | string | `"VeeCode DevPortal support"` |

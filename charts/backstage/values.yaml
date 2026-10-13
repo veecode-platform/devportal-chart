@@ -57,12 +57,13 @@ global:
       # -- Instead of generating a secret value, use the following value
       value: ""
   veecode:
-    # !!! SECURITY: this deliberately maps unauthenticated users to ADMIN.
-    # !!! Set this single key to false before exposing the portal to real users;
-    # !!! then configure a real provider (GitLab/GitHub OAuth). RBAC enforcement
-    # !!! is still off until the later M6 decision.
+    # !!! SECURITY: when true, this deliberately maps unauthenticated users to ADMIN.
+    # !!! It is off by default. Before exposing the portal to real users, keep it off and
+    # !!! configure a real provider (GitLab/GitHub OAuth). RBAC enforcement is still off
+    # !!! until the later M6 decision.
     guestAuth:
-      enabled: true
+      # -- Sign visitors in as the guest, mapped to user:default/admin. Evaluation only.
+      enabled: false
     # Branding exposed as VALUES (M4.7 decision-round ruling 4). Defaults
     # reproduce the baked VeeCode brand; a consumer overrides title/width or
     # supplies its own logo without editing any file. Loaded LAST in the
