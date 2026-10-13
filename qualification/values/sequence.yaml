@@ -1,5 +1,9 @@
 global:
   host: localhost
+  # lib.sh connect() gets its API token from /api/auth/guest/refresh.
+  veecode:
+    guestAuth:
+      enabled: true
 upstream:
   backstage:
     podSecurityContext:
