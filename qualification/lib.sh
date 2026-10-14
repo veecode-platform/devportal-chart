@@ -281,15 +281,17 @@ connect() {
 }
 
 # Succeeds when the guest sign-in issues a token. Sets GUEST_STATUS to the HTTP status it answered,
-# or to none when no answer came back. The body stays in $OUT/guest-refresh-$1.json, with the token
-# blanked so that the artifact holds no credential.
+# or to none when no answer came back. Only a copy with every token value blanked reaches
+# $OUT/guest-refresh-$1.json, because $OUT is uploaded as an artifact; the raw body never does.
 guest_signin_issues_token() {
-  local body=$OUT/guest-refresh-$1.json issued=false
-  GUEST_STATUS=$(curl -s --max-time 20 -o "$body" -w '%{http_code}' -H 'X-Requested-With: XMLHttpRequest' "$URL/api/auth/guest/refresh") || GUEST_STATUS=none
-  if jq -e '(.backstageIdentity.token // "") | length > 0' "$body" > /dev/null 2>&1; then
+  local body=$OUT/guest-refresh-$1.json raw issued=false
+  raw=$(mktemp)
+  GUEST_STATUS=$(curl -s --max-time 20 -o "$raw" -w '%{http_code}' -H 'X-Requested-With: XMLHttpRequest' "$URL/api/auth/guest/refresh") || GUEST_STATUS=none
+  if jq -e '(.backstageIdentity.token // "") | length > 0' "$raw" > /dev/null 2>&1; then
     issued=true
   fi
-  sed -i -E 's/("token" *: *")[^"]*/\1redacted/' "$body" 2> /dev/null || true
+  sed -E 's/("[A-Za-z]*[Tt]oken" *: *")[^"]+/\1redacted/g' "$raw" > "$body" 2> /dev/null || rm -f "$body"
+  rm -f "$raw"
   [ "$issued" = true ]
 }
 
