@@ -46,7 +46,7 @@ run_case() {
   }
   kept=$(cat "$TMP/out-$name"/guest-refresh-*.json 2> /dev/null || true)
   if [ "$kept" != "${body//issued/redacted}" ] || [[ $kept == *issued* ]]; then
-    printf 'FAIL %s: the response was not kept in the output directory with every token blanked\n' "$name" >&2
+    printf 'FAIL %s: the response was not kept in the output directory with every token-key value blanked\n' "$name" >&2
     FAILURES=$((FAILURES + 1))
     return
   fi
@@ -65,6 +65,6 @@ run_case answer-without-token-passes-the-off-check 200 '{"backstageIdentity":{}}
 run_case token-passes-the-on-check 200 "$TOKEN_BODY" yes PASS "HTTP 200"
 run_case refusal-fails-the-on-check 404 "$NOT_FOUND_BODY" yes FAIL "HTTP 404"
 run_case connection-refused-fails-the-off-check 000 "" no FAIL "HTTP none" 7
-run_case every-token-key-is-blanked 200 '{"backstageIdentity":{"token":"issued","accessToken":"issued"},"idToken":"issued","token":"issued"}' yes PASS "HTTP 200"
+run_case every-token-key-is-blanked 200 '{"backstageIdentity":{"token":"issued","accessToken":"issued"},"idToken":"issued","token":"issued","providerInfo":{"access_token":"issued","refresh_token":"issued"}}' yes PASS "HTTP 200"
 
 [ "$FAILURES" -eq 0 ]

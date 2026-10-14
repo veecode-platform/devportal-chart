@@ -281,7 +281,7 @@ connect() {
 }
 
 # Succeeds when the guest sign-in issues a token. Sets GUEST_STATUS to the HTTP status it answered,
-# or to none when no answer came back. Only a copy with every token value blanked reaches
+# or to none when no answer came back. Only a copy with the value of every key ending in token blanked reaches
 # $OUT/guest-refresh-$1.json, because $OUT is uploaded as an artifact; the raw body never does.
 guest_signin_issues_token() {
   local body=$OUT/guest-refresh-$1.json raw issued=false
@@ -290,7 +290,7 @@ guest_signin_issues_token() {
   if jq -e '(.backstageIdentity.token // "") | length > 0' "$raw" > /dev/null 2>&1; then
     issued=true
   fi
-  sed -E 's/("[A-Za-z]*[Tt]oken" *: *")[^"]+/\1redacted/g' "$raw" > "$body" 2> /dev/null || rm -f "$body"
+  sed -E 's/("[A-Za-z_]*[Tt]oken" *: *")[^"]+/\1redacted/g' "$raw" > "$body" 2> /dev/null || rm -f "$body"
   rm -f "$raw"
   [ "$issued" = true ]
 }

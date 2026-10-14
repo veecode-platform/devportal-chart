@@ -32,7 +32,7 @@ Run `qualification/test-release-helpers.sh` for the release version and checksum
 Two more tests need no cluster and no network, and the first job of the workflow runs them on every run:
 
 - `qualification/test-scope.sh` builds throwaway repositories and checks what a pull request asks the qualification to do (see below) in the cases of an image change, of only its digest or only its registry, a catalog index change, both, a qualification file or the workflow only, a qualification file with other chart changes, a pin with a qualification file, and nothing, and that `prior-qualification.sh` refuses to skip a pull request that re-pins the catalog index.
-- `qualification/test-guest-check.sh` runs the sequence's guest sign-in check against a `curl` that answers like a portal with guest sign-in on and off, and against one whose connection is refused, and checks that the response it keeps holds no token value under any token key.
+- `qualification/test-guest-check.sh` runs the sequence's guest sign-in check against a `curl` that answers like a portal with guest sign-in on and off, and against one whose connection is refused, and checks that the response it keeps holds no value under a key that ends in `token` or `Token`, camelCase or snake_case.
 
 ## Run it
 
@@ -151,8 +151,8 @@ release without `--reuse-values`. It asserts that:
 - `GET /api/auth/guest/refresh` no longer issues a token. The check does not pin the status
   the backend answers, only that no `backstageIdentity.token` comes back, and it records the
   status in the table. It fails when no status comes back at all, as when the portal cannot be
-  reached, so an unreachable portal never passes. Only a copy of the response with every token
-  value blanked reaches the output directory; the raw response stays in a temporary file;
+  reached, so an unreachable portal never passes. Only a copy of the response with the value of every
+  key ending in `token` or `Token` blanked reaches the output directory; the raw response stays in a temporary file;
 - the ConfigMap `veecode-auth`, which carries the guest provider, is gone.
 
 Step 1 turns guest on with values, so the check does not depend on the default of the
