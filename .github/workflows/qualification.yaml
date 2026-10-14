@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       chart_version:
-        description: Published devportal chart version to qualify, as x.y.z or x.y.z-rc.N (for example 1.0.0-rc.1). Set this or image_tag.
+        description: Published devportal chart version to qualify, as x.y.z or x.y.z-rc.N (for example 1.0.4). A chart older than 1.0.4 fails the guest sign-in step by design. Set this or image_tag.
         required: false
         type: string
       image_tag:
@@ -19,7 +19,7 @@ on:
         required: false
         type: string
       self_test:
-        description: Report the checks that need a change the candidate lacks as SKIP instead of failing them
+        description: Report the checks that need a change the candidate lacks as SKIP instead of failing them. The guest sign-in step is never skipped, so a chart older than 1.0.4 fails it.
         required: false
         type: boolean
         default: false
@@ -59,7 +59,13 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Compare the pinned image and the qualification files with the base
+      - name: Test the scope decision and the guest sign-in check
+        run: |
+          set -euo pipefail
+          bash qualification/test-scope.sh
+          bash qualification/test-guest-check.sh
+
+      - name: Compare the pinned image, the pinned catalog index and the qualification files with the base
         id: decide
         env:
           EVENT: ${{ github.event_name }}
@@ -71,7 +77,6 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          image() { yq -o=json -I=0 '.upstream.backstage.image' "$1"; }
           image_tag=
           image_digest=
           if [ "$EVENT" = schedule ]; then
@@ -97,28 +102,36 @@ jobs:
             run=true
             self_test=$SELF_TEST_INPUT
           else
-            git show "$BASE_SHA:charts/backstage/values.yaml" > "$RUNNER_TEMP/base-values.yaml"
-            if [ "$(image "$RUNNER_TEMP/base-values.yaml")" != "$(image charts/backstage/values.yaml)" ]; then
-              if prior=$(bash qualification/prior-qualification.sh "$BASE_SHA"); then
-                # A release pull request: the image was qualified with this chart before it
-                # was pinned (image_tag), so qualifying it again here adds no evidence.
-                echo "::notice title=Already qualified::This release pull request pins an image that run $prior qualified with the same chart; not qualifying it again."
-                echo "Already qualified by $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$prior" >> "$GITHUB_STEP_SUMMARY"
-                run=false
-              else
-                echo "The pinned image changed: qualify the candidate chart."
+            scope=$(bash qualification/pr-scope.sh "$BASE_SHA")
+            case $scope in
+              pins)
+                if prior=$(bash qualification/prior-qualification.sh "$BASE_SHA"); then
+                  # A release pull request: the image was qualified with this chart before it
+                  # was pinned (image_tag), so qualifying it again here adds no evidence.
+                  echo "::notice title=Already qualified::This release pull request pins an image that run $prior qualified with the same chart; not qualifying it again."
+                  echo "Already qualified by $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$prior" >> "$GITHUB_STEP_SUMMARY"
+                  run=false
+                else
+                  echo "A pinned image or catalog index changed: qualify the candidate chart."
+                  run=true
+                fi
+                self_test=false
+                ;;
+              qualification)
+                echo "No pin moved, and the qualification changed: self-test it against the current chart."
                 run=true
-              fi
-              self_test=false
-            elif [ -n "$(git diff --name-only "$BASE_SHA" HEAD -- qualification .github/workflows/qualification.yaml)" ]; then
-              echo "Only the qualification changed: self-test it against the current chart."
-              run=true
-              self_test=true
-            else
-              echo "Neither the pinned image nor the qualification changed: nothing to qualify."
-              run=false
-              self_test=false
-            fi
+                self_test=true
+                ;;
+              nothing)
+                echo "Neither a pinned image or catalog index nor the qualification changed: nothing to qualify."
+                run=false
+                self_test=false
+                ;;
+              *)
+                echo "::error::qualification/pr-scope.sh answered '$scope'."
+                exit 1
+                ;;
+            esac
           fi
           echo "run=$run" >> "$GITHUB_OUTPUT"
           echo "self_test=$self_test" >> "$GITHUB_OUTPUT"

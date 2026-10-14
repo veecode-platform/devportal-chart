@@ -249,13 +249,27 @@ stop_portal() {
   fail "the portal pod did not stop"
 }
 
-connect() {
+start_port_forward() {
   if [ -n "$PF" ]; then
     kill "$PF" 2> /dev/null || true
     wait "$PF" 2> /dev/null || true
   fi
   "${K[@]}" port-forward "svc/$DEPLOY" "$PORT:7007" >> "$OUT/port-forward.log" 2>&1 &
   PF=$!
+}
+
+# Like connect, for a portal with no guest sign-in to take an API token from.
+port_forward() {
+  start_port_forward
+  for _ in $(seq 1 30); do
+    curl -s -o /dev/null "$URL/" && return 0
+    sleep 2
+  done
+  fail "the portal did not answer through the port-forward"
+}
+
+connect() {
+  start_port_forward
   for _ in $(seq 1 30); do
     if curl -s -o /dev/null "$URL/"; then
       TOKEN=$(curl -s -H 'X-Requested-With: XMLHttpRequest' "$URL/api/auth/guest/refresh" | jq -r '.backstageIdentity.token // empty')
@@ -264,6 +278,34 @@ connect() {
     sleep 2
   done
   fail "the portal did not issue a guest token"
+}
+
+# Succeeds when the guest sign-in issues a token. Sets GUEST_STATUS to the HTTP status it answered,
+# or to none when no answer came back. Only a copy with the value of every key ending in token blanked reaches
+# $OUT/guest-refresh-$1.json, because $OUT is uploaded as an artifact; the raw body never does.
+guest_signin_issues_token() {
+  local body=$OUT/guest-refresh-$1.json raw issued=false
+  raw=$(mktemp)
+  GUEST_STATUS=$(curl -s --max-time 20 -o "$raw" -w '%{http_code}' -H 'X-Requested-With: XMLHttpRequest' "$URL/api/auth/guest/refresh") || GUEST_STATUS=none
+  if jq -e '(.backstageIdentity.token // "") | length > 0' "$raw" > /dev/null 2>&1; then
+    issued=true
+  fi
+  sed -E 's/("[A-Za-z_]*[Tt]oken" *: *")[^"]+/\1redacted/g' "$raw" > "$body" 2> /dev/null || rm -f "$body"
+  rm -f "$raw"
+  [ "$issued" = true ]
+}
+
+# Passes when the answer is the one the check wants and the portal answered at all: a refused or
+# timed-out request is no sign that the guest sign-in refuses a token.
+guest_check_holds() {
+  [ "$1" = "$2" ] && [[ $GUEST_STATUS =~ ^[0-9]{3}$ ]]
+}
+
+# $2 describes the check, $3 is yes when the guest sign-in must issue a token and no when it must not.
+check_guest_signin() {
+  local issued
+  guest_signin_issues_token "$3" && issued=yes || issued=no
+  assert "$1" "$2" "" "HTTP $GUEST_STATUS" guest_check_holds "$issued" "$3"
 }
 
 api() { curl -s --fail -H "Authorization: Bearer $TOKEN" "$URL/api/extensions/$1"; }
