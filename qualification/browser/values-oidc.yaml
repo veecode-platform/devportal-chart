@@ -12,7 +12,7 @@ global:
       enabled: true
   dynamic:
     plugins:
-      - package: ./dynamic-plugins/dist/backstage-community-plugin-catalog-backend-module-keycloak-dynamic
+      - package: oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/backstage-community-plugin-catalog-backend-module-keycloak@sha256:0f687ed2380a3b612cbaf02454c3486fa08d9e95e69a40dc6d2a4b16880ff538!backstage-community-plugin-catalog-backend-module-keycloak
         disabled: false
         pluginConfig:
           catalog:
