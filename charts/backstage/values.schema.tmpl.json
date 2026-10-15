@@ -67,26 +67,14 @@
                         },
                         "includes": {
                             "title": "List of YAML files to include, each of which should contain a `plugins` array.",
-                            "description": "MUST contain dynamic-plugins.default.yaml (the relative pointer the installer's CATALOG_INDEX_IMAGE handling swaps for the catalog-index DPDY, which enables the VeeCode factory plugins). Dropping it silently disables catalog-index plugin discovery; this schema constraint fails the Helm render/install instead. The image-baked /opt/app-root/src/dynamic-plugins.veecode.yaml must not be listed: the installer fails when it meets the index entries for the same plugins. To disable or reconfigure a factory plugin, use the index ref with {{inherit}} in global.dynamic.plugins, as described in docs/product-face-overrides.md.",
+                            "description": "MUST contain dynamic-plugins.default.yaml (the relative pointer the installer's CATALOG_INDEX_IMAGE handling swaps for the catalog-index DPDY, which enables the VeeCode factory plugins). Dropping it silently disables catalog-index plugin discovery; this schema constraint fails the Helm render/install instead. Image 3.1 and later no longer carry /opt/app-root/src/dynamic-plugins.veecode.yaml; the installer skips a listed file that does not exist, with a warning, so an includes list kept from chart 1.0.x (for example by helm upgrade --reuse-values) still installs. Remove that entry anyway: with an image that still has the file, the installer fails when it meets the index entries for the same plugins. To disable or reconfigure a factory plugin, use the index ref with {{inherit}} in global.dynamic.plugins, as described in docs/product-face-overrides.md.",
                             "type": "array",
                             "items": {
                                 "type": "string"
                             },
-                            "allOf": [
-                                {
-                                    "contains": {
-                                        "const": "dynamic-plugins.default.yaml"
-                                    }
-                                },
-                                {
-                                    "not": {
-                                        "contains": {
-                                            "type": "string",
-                                            "pattern": "(^|/)dynamic-plugins\\.veecode\\.yaml$"
-                                        }
-                                    }
-                                }
-                            ],
+                            "contains": {
+                                "const": "dynamic-plugins.default.yaml"
+                            },
                             "default": [
                                 "dynamic-plugins.default.yaml"
                             ]

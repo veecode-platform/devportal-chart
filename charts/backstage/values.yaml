@@ -23,7 +23,8 @@ global:
     # plugins, so dynamic-plugins.default.yaml is the only include. The image-baked
     # /opt/app-root/src/dynamic-plugins.veecode.yaml must never be read with the index: the
     # installer fails with "Duplicate plugin configuration" when both name the same plugin.
-    # The values schema rejects it as an include.
+    # Image 3.1 has no such file, so a leftover include of it (kept by helm upgrade
+    # --reuse-values from 1.0.x) is skipped with a warning; the schema does not reject it.
     includes:
       - dynamic-plugins.default.yaml
     # This list is purely ADDITIVE for customer plugins. To disable a factory plugin, give its

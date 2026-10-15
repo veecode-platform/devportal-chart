@@ -38,9 +38,12 @@ ct lint --config ct-lint.yaml --target-branch main
   digest tag on any other repository.
 - `global.dynamic.includes` keeps `dynamic-plugins.default.yaml`, the pointer the
   installer swaps for the catalog index, which enables the factory plugins. The
-  values schema rejects a list without it, including in the CI values, and
-  rejects the image-baked `dynamic-plugins.veecode.yaml` in either path form: the
-  installer fails when that file and the index name the same plugin.
+  values schema rejects a list without it, including in the CI values. The schema
+  accepts a leftover image-baked `dynamic-plugins.veecode.yaml` entry, so an upgrade
+  that reuses 1.0.x values (`helm upgrade --reuse-values`, ct's upgrade test) still
+  validates: image 3.1 has no such file and the installer skips it with a warning.
+  With an image that still has the file, the installer fails when that file and the
+  index name the same plugin.
 - Every chart change bumps `version`, and a merged version is released right
   away with its `chart-v<version>` tag.
 

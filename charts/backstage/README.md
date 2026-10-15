@@ -138,7 +138,7 @@ Kubernetes: `>= 1.27.0-0`
 | global.catalogIndex | Catalog index configuration for automatic plugin discovery. The `install-dynamic-plugins.py` script pulls this image if the `CATALOG_INDEX_IMAGE` environment variable is set. The `dynamic-plugins.default.yaml` file will be extracted and written to `dynamic-plugins-root` volume mount. | object | `{"extraImages":[],"image":{"registry":"quay.io","repository":"veecode/plugin-catalog-index@sha256","tag":"26bd062a8fad8c204b1a175e775a4549d599a2a57acd849f083d6591ed2a917d"}}` |
 | global.catalogIndex.extraImages | Extra catalog index images for additional plugin discovery in the Extensions UI. Each item must include `registry`, `repository`, and `tag` fields; `name` is optional. Only catalog entities are extracted from extra images (no `dynamic-plugins.default.yaml` handling). | list | `[]` |
 | global.clusterRouterBase | Shorthand for users who do not want to specify a custom HOSTNAME. Used ONLY with the DEFAULT upstream.backstage.appConfig value and with OCP Route enabled. | string | `"apps.example.com"` |
-| global.dynamic.includes[0] |  | string | `"dynamic-plugins.default.yaml"` |
+| global.dynamic.includes | reuse-values from 1.0.x) is skipped with a warning; the schema does not reject it. | list | `["dynamic-plugins.default.yaml"]` |
 | global.dynamic.plugins |  | list | `[]` |
 | global.host | Custom hostname shorthand, overrides `global.clusterRouterBase`, `upstream.ingress.host`, `route.host`, and url values in `upstream.backstage.appConfig`. | string | `""` |
 | global.lightspeed | Built-in Lightspeed feature configuration. | object | Use Lightspeed compatible settings / configurations. |

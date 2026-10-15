@@ -87,8 +87,9 @@ to chart 1.1.0, change each such entry to the index form:
 1. Replace `@sha256:<digest>` with `:{{inherit}}`. Keep the `!<path>`.
 2. Keep `disabled` and `pluginConfig` as they are.
 3. Remove `/opt/app-root/src/dynamic-plugins.veecode.yaml` from
-   `global.dynamic.includes`. The values schema rejects that entry, and the
-   image no longer has the file.
+   `global.dynamic.includes`. The image no longer has the file, so the
+   installer skips it with a warning; with an image that still has it, the
+   installer fails on the duplicate plugins.
 4. Remove any `DEVPORTAL_FACE_FILE` you set. The chart no longer sets it.
 
 An override that still uses the full digest ref keeps matching its factory
