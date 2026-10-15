@@ -292,15 +292,14 @@ upstream:
     image:
       registry: docker.io
       repository: veecode/devportal
-      # This is the 3.0.3 release, promoted by digest from the qualified
-      # 3.0.3-rc.1 candidate. Against 3.0.2 the product face pins the five
-      # default backend plugins (techdocs, notifications, signals, tech-radar,
-      # Marketplace) rebuilt with proxy-addr 2.0.8 (CVE-2026-90711). Main
-      # product line, Backstage 1.52. The digest WINS over the tag: bump both
-      # together. It is the multi-arch manifest list digest (amd64 + arm64),
-      # not a single-arch image digest.
-      tag: 3.0.3
-      digest: sha256:e5c84f744994b30b329e23ff8480857bd4b0be46d63e027b5e87d0428c1df7f5
+      # This is the 3.1.0 release, promoted by digest from the qualified
+      # 3.1.0-rc.3 candidate. Main product line, Backstage 1.54.9. The 18
+      # factory plugins come enabled from the plugin catalog index, and the
+      # image keeps only their names in /opt/app-root/src/factory-plugins.yaml.
+      # The digest WINS over the tag: bump both together. It is the multi-arch
+      # manifest list digest (amd64 + arm64), not a single-arch image digest.
+      tag: 3.1.0
+      digest: sha256:fe33373b7e5dc536f04d1878519bb53862a769b46869f78f829b198a30e5246b
       pullPolicy: IfNotPresent
     command: []
     # FIXME (tumido): USE POSTGRES_PASSWORD and POSTGRES_USER instead of POSTGRES_ADMIN_PASSWORD

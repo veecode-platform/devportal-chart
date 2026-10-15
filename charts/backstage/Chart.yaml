@@ -134,7 +134,8 @@ version: 1.1.0
 #  to evaluate (it maps every guest to the admin user). Values that override only global.catalogIndex.image.tag must also set the
 #  repository; the values schema rejects that combination. The README documents BACKEND_SECRET, the unused permission.enabled
 #  key is gone, and the Route and helm test stay off with the reason written.
-# 1.1.0: the product face moves into the plugin catalog index. The index enables the factory plugins, and the image keeps only
+# 1.1.0: image -> 3.1.0 (Backstage 1.54.9; the factory plugins come enabled from the catalog index), with tag, digest and appVersion moved together (release; same digest as the qualified 3.1.0-rc.3).
+#  The product face moves into the plugin catalog index. The index enables the factory plugins, and the image keeps only
 #  their names (/opt/app-root/src/factory-plugins.yaml). global.dynamic.includes is the DPDY include alone, and the face file is
 #  no longer read. Overrides use the index form in docs/product-face-overrides.md.
-appVersion: 3.0.3
+appVersion: 3.1.0
