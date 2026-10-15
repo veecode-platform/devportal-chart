@@ -36,9 +36,11 @@ ct lint --config ct-lint.yaml --target-branch main
   tag moves on. `hack/catalog-index-pin.py check` enforces both, and the values
   schema rejects a tag that is not a digest on a `@sha256` repository, and a
   digest tag on any other repository.
-- `global.dynamic.includes` keeps `dynamic-plugins.default.yaml` and
-  `/opt/app-root/src/dynamic-plugins.veecode.yaml`. The values schema rejects a
-  list without them, including in the CI values.
+- `global.dynamic.includes` keeps `dynamic-plugins.default.yaml`, the pointer the
+  installer swaps for the catalog index, which enables the factory plugins. The
+  values schema rejects a list without it, including in the CI values, and
+  rejects the image-baked `dynamic-plugins.veecode.yaml` in either path form: the
+  installer fails when that file and the index name the same plugin.
 - Every chart change bumps `version`, and a merged version is released right
   away with its `chart-v<version>` tag.
 
