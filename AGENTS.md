@@ -46,7 +46,7 @@ ct lint --config ct-lint.yaml --target-branch main
 
 Every chart release re-pins the catalog index first:
 `python3 hack/catalog-index-pin.py pin` rewrites `global.catalogIndex.image` to
-the current digest of `bs_1.52.0`, and the release pull request carries the
+the current digest of `bs_1.54.9`, and the release pull request carries the
 result.
 
 A `chart-v<version>` tag runs `publish-chart-release.yml`, which creates the

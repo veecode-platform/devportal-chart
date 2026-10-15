@@ -5,7 +5,7 @@ The chart installs the index as <registry>/<repository>:<tag>. Pinned by digest,
 repository ends in @sha256 and tag holds the 64 hex digits, as in the RHDH chart.
 
   catalog-index-pin.py pin [--chart-dir DIR] [TAG]
-      Resolves TAG (default bs_1.52.0) on quay.io and rewrites repository and tag in
+      Resolves TAG (default bs_1.54.9) on quay.io and rewrites repository and tag in
       DIR/values.yaml, and nothing else. Refuses a digest that no timestamped tag points at.
   catalog-index-pin.py check [--chart-dir DIR]
       Fails unless values.yaml pins the index by digest, quay.io serves that digest, and
@@ -26,7 +26,7 @@ import urllib.request
 
 import yaml
 
-DEFAULT_TAG = "bs_1.52.0"
+DEFAULT_TAG = "bs_1.54.9"
 TIMESTAMPED = re.compile(r"bs_\d+\.\d+\.\d+(-[0-9A-Za-z.]+)?_\d{8}T\d{6}")
 DIGEST = re.compile(r"[0-9a-f]{64}")
 IMAGE_KEYS = re.compile(

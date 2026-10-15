@@ -23,7 +23,7 @@ Every chart release re-pins the index before the version is tagged:
 python3 hack/catalog-index-pin.py pin
 ```
 
-The command resolves the digest that the moving tag `bs_1.52.0` serves on quay.io, confirms that a timestamped tag `bs_<backstage-version>_<timestamp>` points at the same digest, and rewrites `repository` and `tag` in `charts/backstage/values.yaml`, and nothing else. Pass another tag to pin another Backstage line. Running it again changes nothing until the moving tag moves.
+The command resolves the digest that the moving tag `bs_1.54.9` serves on quay.io, confirms that a timestamped tag `bs_<backstage-version>_<timestamp>` points at the same digest, and rewrites `repository` and `tag` in `charts/backstage/values.yaml`, and nothing else. Pass another tag to pin another Backstage line. Running it again changes nothing until the moving tag moves.
 
 `python3 hack/catalog-index-pin.py check` runs in every pull request and in the release workflow. It fails when the index is not pinned by digest, when quay.io does not serve the digest, or when no timestamped tag points at it. The timestamped tag is what keeps the digest available: it stays where it was created, while the moving tag moves on with every index build and the registry can garbage-collect a digest that only the moving tag held.
 
@@ -48,7 +48,7 @@ global:
     image:
       registry: quay.io
       repository: veecode/plugin-catalog-index
-      tag: "bs_1.52.0_20261009T013836"
+      tag: "bs_1.54.9_20261015T134717"
 ```
 
 The values schema rejects a `tag` that is not 64 hexadecimal digits while `repository` ends in `@sha256`. Helm then stops the install or upgrade with a schema error on `global.catalogIndex.image.tag`, instead of starting a pod that cannot pull the index. From chart 1.1.0, the schema also rejects the reverse: a `tag` of 64 hexadecimal digits while `repository` does not end in `@sha256`, which is the default digest tag with a mirror `repository` that drops the suffix. Helm then stops with a schema error on `global.catalogIndex.image.repository`. To use a mirror, set `registry` to the mirror host and keep the `@sha256` form in `repository`.
