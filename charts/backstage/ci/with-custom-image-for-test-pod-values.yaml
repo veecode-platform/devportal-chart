@@ -2,12 +2,11 @@
 route:
   enabled: false
 
-# CI: keep both product includes; the values schema rejects a list without them.
+# CI: keep the DPDY include; the values schema rejects a list without it.
 global:
   dynamic:
     includes:
       - dynamic-plugins.default.yaml
-      - /opt/app-root/src/dynamic-plugins.veecode.yaml
   lightspeed:
     plugins: []
 

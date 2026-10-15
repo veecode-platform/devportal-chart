@@ -9,7 +9,7 @@ kubernetesPlugin:
     namespaceQualifiedName: false
 global:
   dynamic:
-    # Both entries are level-0 includes read by the installer's fixed-filename
+    # The level-0 include is read by the installer's fixed-filename
     # dynamic-plugins.yaml (level 1), which merge-dynamic-plugins.js now writes as part of
     # preInstallCommand (see global.veecode.preInstallCommand). The marketplace write-through
     # (DEVPORTAL_DB_PATH/extensions-install.yaml) no longer belongs here: it enters at level 1
@@ -19,24 +19,17 @@ global:
     # - dynamic-plugins.default.yaml is a relative include; the installer's CATALOG_INDEX_IMAGE
     #   handling only swaps in the catalog-index DPDY when an include's basename matches this
     #   exact filename, so the name must stay literal.
-    # - the VeeCode product face is baked into the devportal-core image (OD1 phase A) and MUST
-    #   stay listed; it is fail-closed at the installer level if missing (unlike the marketplace
-    #   entry, which was only ever a warning).
+    # The VeeCode product face is not an include. The plugin catalog index enables its factory
+    # plugins, so dynamic-plugins.default.yaml is the only include. The image-baked
+    # /opt/app-root/src/dynamic-plugins.veecode.yaml must never be read with the index: the
+    # installer fails with "Duplicate plugin configuration" when both name the same plugin.
+    # The values schema rejects it as an include.
     includes:
       - dynamic-plugins.default.yaml
-      - /opt/app-root/src/dynamic-plugins.veecode.yaml
-    # OD1 phase A: the VeeCode product face (Home, header, TechDocs,
-    # Notifications, Tech Radar, Marketplace, theme, ...) used to live here as a
-    # Helm list — which meant a customer setting this same key would silently
-    # REPLACE the whole face instead of adding to it. The face now ships baked
-    # into the devportal-core image
-    # (/opt/app-root/src/dynamic-plugins.veecode.yaml) and is wired in via
-    # `includes` above. This list is now purely ADDITIVE for customer plugins.
-    # To disable one face plugin without touching the rest, add here:
-    #   - package: <the exact ref from dynamic-plugins.veecode.yaml>
-    #     disabled: true
-    # Note: an override that also sets `pluginConfig` REPLACES that plugin's
-    # whole pluginConfig block (no deep-merge) — see the face file's header.
+    # This list is purely ADDITIVE for customer plugins. To disable a factory plugin, give its
+    # index ref with {{inherit}} and `disabled: true`. To reconfigure one, give the same ref a
+    # full `pluginConfig` block, which replaces the index block whole. See
+    # docs/product-face-overrides.md.
     plugins: []
 
   # -- Shorthand for users who do not want to specify a custom HOSTNAME. Used ONLY with the DEFAULT upstream.backstage.appConfig value and with OCP Route enabled.
@@ -515,11 +508,6 @@ upstream:
             value: /devportal-data/catalog-entities-extract
           - name: DEVPORTAL_DB_PATH
             value: /devportal-data
-            # Pins the marketplace regen's dedup source to the exact face path this
-            # chart wires into global.dynamic.includes (OD1 phase A hardening) — so
-            # dedup never silently falls back to the script's own default.
-          - name: DEVPORTAL_FACE_FILE
-            value: /opt/app-root/src/dynamic-plugins.veecode.yaml
             # Points merge-dynamic-plugins.js at the operator-rendered config (mounted at
             # dynamic-plugins.operator.yaml, see the `dynamic-plugins` volume above) so it can
             # merge it with DEVPORTAL_DB_PATH/extensions-install.yaml into the level-1

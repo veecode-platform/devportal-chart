@@ -116,7 +116,7 @@
                                     "type": "string"
                                 },
                                 "tag": {
-                                    "default": "927f6c7c3fb838ac6f654a7ddc76c2fa9e57fdc077aaef30f678f076e96810ee",
+                                    "default": "f4ce21b7b10df9645c90e2925c4ced9e8203337bdd47854782f8979268d3ff94",
                                     "title": "Catalog index image tag",
                                     "type": "string"
                                 }
@@ -150,20 +150,22 @@
                             "allOf": [
                                 {
                                     "contains": {
-                                        "const": "/opt/app-root/src/dynamic-plugins.veecode.yaml"
+                                        "const": "dynamic-plugins.default.yaml"
                                     }
                                 },
                                 {
-                                    "contains": {
-                                        "const": "dynamic-plugins.default.yaml"
+                                    "not": {
+                                        "contains": {
+                                            "pattern": "(^|/)dynamic-plugins\\.veecode\\.yaml$",
+                                            "type": "string"
+                                        }
                                     }
                                 }
                             ],
                             "default": [
-                                "dynamic-plugins.default.yaml",
-                                "/opt/app-root/src/dynamic-plugins.veecode.yaml"
+                                "dynamic-plugins.default.yaml"
                             ],
-                            "description": "MUST contain both /opt/app-root/src/dynamic-plugins.veecode.yaml (the image-baked VeeCode product face: Home, header, TechDocs, Notifications, Tech Radar, Marketplace, theme) and dynamic-plugins.default.yaml (the relative pointer the installer's CATALOG_INDEX_IMAGE handling swaps for the catalog-index DPDY). Dropping either pointer silently boots a faceless portal or disables catalog-index plugin discovery; this schema constraint fails the Helm render/install instead. To customize the face, add an entry to global.dynamic.plugins with the same package ref and disabled: true \u2014 do not remove either pointer.",
+                            "description": "MUST contain dynamic-plugins.default.yaml (the relative pointer the installer's CATALOG_INDEX_IMAGE handling swaps for the catalog-index DPDY, which enables the VeeCode factory plugins). Dropping it silently disables catalog-index plugin discovery; this schema constraint fails the Helm render/install instead. The image-baked /opt/app-root/src/dynamic-plugins.veecode.yaml must not be listed: the installer fails when it meets the index entries for the same plugins. To disable or reconfigure a factory plugin, use the index ref with  in global.dynamic.plugins, as described in docs/product-face-overrides.md.",
                             "items": {
                                 "type": "string"
                             },
@@ -5039,10 +5041,6 @@
                                         {
                                             "name": "DEVPORTAL_DB_PATH",
                                             "value": "/devportal-data"
-                                        },
-                                        {
-                                            "name": "DEVPORTAL_FACE_FILE",
-                                            "value": "/opt/app-root/src/dynamic-plugins.veecode.yaml"
                                         },
                                         {
                                             "name": "DEVPORTAL_OPERATOR_CONFIG",
