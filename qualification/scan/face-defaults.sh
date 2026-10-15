@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# Usage: face-defaults.sh FACE_FILE
-# Scans, by digest and in report mode, each OCI artifact that FACE_FILE enables, and writes
-# OUT/summary.md with one row per artifact. FACE_FILE is the product face of the image
-# (/opt/app-root/src/dynamic-plugins.veecode.yaml), read from the running portal.
+# Usage: face-defaults.sh DPDY_FILE
+# Scans, by digest and in report mode, each OCI artifact that DPDY_FILE enables, and writes
+# OUT/summary.md with one row per artifact. DPDY_FILE is dynamic-plugins.default.yaml of the
+# catalog index the chart pins, extracted from that image. Its enabled entries are the product face.
 #
 #   OUT            output directory, default ./scan-out/face-defaults. Each artifact gets a
 #                  subdirectory with the trivy.json and scan-summary.md that run.sh writes.
 #   TRIVY_BIN_DIR  as in run.sh
 #
 # Exit 0 whatever the scan finds, whether an artifact could not be scanned, and whether the
-# face could not be read: the rows and the notes of summary.md say so. Exit 2 is a usage error.
+# index file could not be read: the rows and the notes of summary.md say so. Exit 2 is a usage error.
 set -euo pipefail
 
 here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
@@ -20,8 +20,8 @@ usage_error() {
   exit 2
 }
 
-[[ $# -eq 1 ]] || usage_error "usage: face-defaults.sh FACE_FILE"
-face=$1
+[[ $# -eq 1 ]] || usage_error "usage: face-defaults.sh DPDY_FILE"
+dpdy=$1
 command -v jq >/dev/null || usage_error "jq is required"
 command -v yq >/dev/null || usage_error "yq is required"
 
@@ -32,23 +32,23 @@ printf 'vulnerabilities: []\n' >"$out/no-exceptions.yaml"
 
 refs=
 note=
-if [[ ! -s $face ]]; then
-  note="the face file could not be read from the portal"
-elif ! refs=$(yq -r '(.plugins // [])[] | select(.disabled != true) | (.package // "") | select(test("^oci://"))' "$face"); then
-  note="the face file is not a YAML list of plugins"
+if [[ ! -s $dpdy ]]; then
+  note="the index file dynamic-plugins.default.yaml could not be read"
+elif ! refs=$(yq -r '(.plugins // [])[] | select(.disabled != true) | (.package // "") | select(test("^oci://"))' "$dpdy"); then
+  note="the index file dynamic-plugins.default.yaml is not a YAML list of plugins"
 else
   refs=$(printf '%s\n' "$refs" | sed -e '/^$/d' -e 's#^oci://##' -e 's#!.*$##' | sort -u)
 fi
 count=$(printf '%s' "$refs" | grep -c . || true)
 
 {
-  echo "# OCI plugin artifacts the face enables by default"
+  echo "# OCI plugin artifacts the pinned index enables by default"
   echo
   echo "- Mode: report only, the findings never fail the run"
   if [[ -n $note ]]; then
     echo "- Not scanned: $note"
   else
-    echo "- Enabled OCI entries in the face: $count"
+    echo "- Enabled OCI entries in the index: $count"
   fi
   if ((count > 0)); then
     echo
@@ -83,7 +83,7 @@ while read -r ref; do
 done <<<"$refs"
 
 if [[ -z $note ]] && ((count == 0)); then
-  echo "- No OCI artifact is enabled by default in this face" >>"$summary"
+  echo "- No OCI artifact is enabled by default in the pinned index" >>"$summary"
 fi
 
 cat "$summary"

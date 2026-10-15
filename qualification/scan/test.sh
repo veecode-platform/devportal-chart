@@ -78,7 +78,7 @@ expect "face defaults scans the enabled, digest-pinned OCI entries and no other"
 expect "face defaults lists an enabled OCI entry that has no digest" 0 grep -q 'by-tag:1.0.0` | none .* not pinned by digest' "$work/face/summary.md"
 expect "face defaults exits 0 when an artifact cannot be scanned" 0 env OUT="$work/face-failed" "${reporting[@]}" STUB_FAIL_ON=enabled-two "$face" "$fixtures/face.yaml"
 expect "face defaults records the artifact that could not be scanned" 0 grep -q 'enabled-two` .* scan did not run (exit 3)' "$work/face-failed/summary.md"
-expect "face defaults exits 0 when the face file is missing" 0 env OUT="$work/face-missing" "${reporting[@]}" "$face" "$work/missing.yaml"
-expect "face defaults says that nothing was scanned" 0 grep -q 'Not scanned: the face file could not be read' "$work/face-missing/summary.md"
+expect "face defaults exits 0 when the index file is missing" 0 env OUT="$work/face-missing" "${reporting[@]}" "$face" "$work/missing.yaml"
+expect "face defaults says that nothing was scanned" 0 grep -q 'Not scanned: the index file dynamic-plugins.default.yaml could not be read' "$work/face-missing/summary.md"
 
 exit $((failures > 0))

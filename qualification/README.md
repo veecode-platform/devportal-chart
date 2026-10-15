@@ -110,7 +110,12 @@ The sequence has seven steps. After each of the first six it checks that:
 - every enabled plugin of the product face is loaded, and the installer logs hold no
   `Cannot find module`, no `already registered`, and no warning about a skipped entry. This is
   `scripts/check-loaded-plugins.sh` of devportal-local, which the workflow fetches at a pinned
-  commit and which reads the face and the logs of the portal pod through `kubectl`;
+  commit and which reads the face and the logs of the portal pod through `kubectl`. A chart 1.1.0
+  portal has no face file: the sequence prints its factory list as `- package:` entries, the form
+  that check reads, until that check reads `/opt/app-root/src/factory-plugins.yaml` itself;
+- on a chart 1.1.0 portal, the repositories of `/opt/app-root/src/factory-plugins.yaml` are the
+  repositories of the enabled entries of the pinned catalog index (`check_factory_list`). Both
+  lists are kept by hand, so this is the check that fails when they disagree;
 - the backend logs `Marketplace installation service initialized (database-backed)`
   and not the fallback to file storage;
 - the portal serves the broken package, which shows that the test-only catalog
@@ -231,11 +236,12 @@ still fails. The exceptions live in
 [`.trivyignore.yaml`](../.trivyignore.yaml), which explains the fields.
 
 **The face-default scan** (`scan/face-defaults.sh`) scans the plugin artifacts that leave the
-image. It reads the product face, `/opt/app-root/src/dynamic-plugins.veecode.yaml`, from the
-running portal pod, takes every `oci://` entry that is not `disabled: true`, and runs `run.sh` in
-report mode on each one by digest, with no exceptions. The face file is the source, not the
-installer's log, because the log also names the plugins the marketplace installed and follows the
-installer's wording. The step takes no count from the face: whatever it enables is scanned.
+image. It reads `dynamic-plugins.default.yaml` of the catalog index the chart pins
+(`global.catalogIndex.image`), copied with `skopeo`, takes every `oci://` entry that is not
+`disabled: true`, and runs `run.sh` in report mode on each one by digest, with no exceptions. The
+index file is the source, not the installer's log, because the log also names the plugins the
+marketplace installed and follows the installer's wording. The step takes no count from the index:
+whatever it enables is scanned.
 
 It writes `face-defaults/summary.md`, a table with one row per artifact that goes to the job
 summary, and the `trivy.json` and `scan-summary.md` of each artifact next to it. The step never
@@ -312,5 +318,5 @@ it to the job summary and uploads `OUT` as the `qualification-sequence` artifact
 `OUT` from the environment, and `INJECT_FAILURE` as above. It needs `kubectl`, `helm`,
 `openssl`, Node.js 24, and root or `sudo` for `npx playwright install --with-deps`.
 `scan/run.sh IMAGE_REF` needs `jq`, `curl`, and `python3` with PyYAML; `MODE=report`
-is its default. `scan/face-defaults.sh FACE_FILE` needs the same plus `yq` 4.
+is its default. `scan/face-defaults.sh DPDY_FILE` needs the same plus `yq` 4.
 `scan/test.sh` checks both against fixtures, with no Trivy, no network and no image.
