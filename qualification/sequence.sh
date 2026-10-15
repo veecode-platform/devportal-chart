@@ -77,8 +77,7 @@ check_loaded_plugins() {
 
 check_catalog() {
   local tag=$1 step=$2 ref index missing extra errors
-  ref=$("${K[@]}" get deploy "$DEPLOY" -o json |
-    jq -r '.spec.template.spec.initContainers[] | select(.name == "install-dynamic-plugins") | .env[] | select(.name == "CATALOG_INDEX_IMAGE") | .value')
+  ref=$(index_ref)
   if index=$(index_packages "$ref"); then
     assert "$step" "the catalog index image can be read" "" "$(wc -l < "$index") packages in $ref" true
   else
@@ -96,6 +95,9 @@ check_catalog() {
   assert "$step" "the portal serves every package of the index" catalog-fixes \
     "$(wc -l < "$OUT/served-$tag.txt") served, $(wc -l < "$index") in $ref plus the fixture; $missing not served, $extra unexpected" \
     test "$((missing + extra))" -eq 0
+  served_versions "$OUT/packages-$tag.json" | comm -13 - "${index%/*}/versions.txt" > "$OUT/stale-$tag.txt"
+  assert "$step" "the portal serves the index's version of every package" catalog-fixes \
+    "$(wc -l < "$OUT/stale-$tag.txt") package(s) at another version" test ! -s "$OUT/stale-$tag.txt"
   errors=$(grep -cE "$CATALOG_ERRORS" "$OUT/backend-$tag.log" || true)
   assert "$step" "no package fails catalog validation in the backend log" catalog-fixes "$errors line(s)" test "$errors" -eq 0
 }
@@ -153,6 +155,7 @@ observe() {
   local tag=$1 step=$2 good=$3 phase=$4 found want=0 needs='' mode
   connect
   wait_catalog "$tag"
+  refresh_packages "$tag"
   collect "$tag"
   log_resources "$step"
   [ "$good" = absent ] || want=1

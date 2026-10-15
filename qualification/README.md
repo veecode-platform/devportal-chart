@@ -117,6 +117,11 @@ The sequence has seven steps. After each of the first six it checks that:
   location works;
 - the portal serves every package of its catalog index image, plus the broken
   package (`catalog-fixes`);
+- the portal serves the index's `spec.version` of every package (`catalog-fixes`).
+  A restart or an upgrade does not run the extensions package provider: Backstage
+  keeps its next run in the database, up to 30 minutes after the last one, so each
+  probe first triggers `extensions-package-provider` through the catalog scheduler
+  route and waits up to five minutes for the new versions;
 - no package fails catalog validation in the backend log (`catalog-fixes`);
 - every artifact the marketplace offers resolves: OCI references anonymously with
   skopeo, bundled references inside the running image (`catalog-fixes`).
