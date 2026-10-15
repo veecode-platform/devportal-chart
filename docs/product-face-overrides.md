@@ -91,8 +91,12 @@ to chart 1.1.0, change each such entry to the index form:
    image no longer has the file.
 4. Remove any `DEVPORTAL_FACE_FILE` you set. The chart no longer sets it.
 
-Behaviour after the upgrade of an override that still uses the full digest
-ref: being verified. Do not rely on it until this note says otherwise.
+An override that still uses the full digest ref keeps matching its factory
+plugin after the upgrade: `disabled: true` still removes it, and a full
+`pluginConfig` still replaces the index block. It also keeps pinning the build
+its digest names, so a 1.0.x digest keeps the 1.0.x build of that plugin
+instead of the one the index ships. Change it to the index form so the plugin
+follows the pinned index.
 
 ## Factory plugin reference
 
