@@ -162,7 +162,31 @@
                                 "required": [
                                     "tag"
                                 ]
-                            }
+                            },
+                            "allOf": [
+                                {
+                                    "if": {
+                                        "properties": {
+                                            "tag": {
+                                                "pattern": "^[0-9a-f]{64}$"
+                                            }
+                                        },
+                                        "required": [
+                                            "tag"
+                                        ]
+                                    },
+                                    "then": {
+                                        "properties": {
+                                            "repository": {
+                                                "pattern": "@sha256$"
+                                            }
+                                        },
+                                        "required": [
+                                            "repository"
+                                        ]
+                                    }
+                                }
+                            ]
                         },
                         "extraImages": {
                             "title": "Extra catalog index images for additional plugin discovery in the Extensions UI. Only catalog entities are extracted from extra images (no dynamic-plugins.default.yaml handling).",
