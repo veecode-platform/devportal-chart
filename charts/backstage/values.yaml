@@ -128,7 +128,7 @@ global:
       # Pinned by digest, as in the RHDH chart: `@sha256` ends the repository and `tag` holds the 64 hex
       # digits, so the template still renders registry/repository:tag. Re-pin with hack/catalog-index-pin.py.
       repository: veecode/plugin-catalog-index@sha256
-      tag: "f4ce21b7b10df9645c90e2925c4ced9e8203337bdd47854782f8979268d3ff94"
+      tag: "26bd062a8fad8c204b1a175e775a4549d599a2a57acd849f083d6591ed2a917d"
     # -- Extra catalog index images for additional plugin discovery in the Extensions UI.
     # Each item must include `registry`, `repository`, and `tag` fields; `name` is optional.
     # Only catalog entities are extracted from extra images (no `dynamic-plugins.default.yaml` handling).
