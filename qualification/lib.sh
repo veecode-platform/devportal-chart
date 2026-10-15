@@ -376,14 +376,15 @@ served_versions() {
 # in the database, up to 30 minutes after the last one. Trigger it, then wait until the catalog serves
 # the package versions of the index this pod extracted.
 refresh_packages() {
-  local index code
+  local index code missing
   index=$(index_packages "$(index_ref)") || return 0
   code=$(curl -s -o /dev/null -w '%{http_code}' -X POST -H "Authorization: Bearer $TOKEN" \
     "$URL/api/catalog/.backstage/scheduler/v1/tasks/extensions-package-provider/trigger")
   log "triggered extensions-package-provider: HTTP $code ($1)"
   for _ in $(seq 1 30); do
     api packages > "$OUT/packages-$1.json"
-    served_versions "$OUT/packages-$1.json" | comm -13 - "${index%/*}/versions.txt" | grep -q . || return 0
+    missing=$(served_versions "$OUT/packages-$1.json" | comm -13 - "${index%/*}/versions.txt")
+    [ -n "$missing" ] || return 0
     sleep 10
   done
   log "the catalog did not serve the index's package versions in five minutes ($1)"
