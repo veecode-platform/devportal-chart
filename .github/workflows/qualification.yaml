@@ -300,19 +300,26 @@ jobs:
           image=$(helm show values "$CHART" | yq '.upstream.backstage.image | .registry + "/" + .repository + "@" + .digest')
           qualification/scan/run.sh "$image"
 
-      - name: Scan the OCI plugin artifacts the face enables by default, report only
+      - name: Set up skopeo
+        run: command -v skopeo || { sudo apt-get update && sudo apt-get install -y skopeo; }
+
+      - name: Scan the OCI plugin artifacts the pinned index enables by default, report only
         if: ${{ !cancelled() }}
         env:
-          NAMESPACE: qualification-browser
-          RELEASE: devportal
+          CHART: ${{ steps.candidate.outputs.chart }}
           OUT: ${{ runner.temp }}/scan/face-defaults
         run: |
           set -euo pipefail
-          mkdir -p "$OUT"
-          kubectl -n "$NAMESPACE" exec "deploy/$RELEASE-developer-hub" -c backstage-backend -- \
-            cat /opt/app-root/src/dynamic-plugins.veecode.yaml > "$OUT/dynamic-plugins.veecode.yaml" ||
-            echo "could not read the face file from the portal pod"
-          qualification/scan/face-defaults.sh "$OUT/dynamic-plugins.veecode.yaml"
+          mkdir -p "$OUT/index"
+          index=$(helm show values "$CHART" | yq '.global.catalogIndex.image | .registry + "/" + .repository + ":" + .tag')
+          if skopeo --override-os linux --override-arch amd64 copy --quiet --src-no-creds "docker://$index" "dir:$OUT/index/image"; then
+            for layer in $(jq -r '.layers[].digest' "$OUT/index/image/manifest.json"); do
+              tar -xzf "$OUT/index/image/${layer#sha256:}" -C "$OUT/index" dynamic-plugins.default.yaml 2> /dev/null || true
+            done
+          else
+            echo "could not copy the catalog index $index"
+          fi
+          qualification/scan/face-defaults.sh "$OUT/index/dynamic-plugins.default.yaml"
 
       - name: Write the step summary
         if: always()

@@ -9,6 +9,7 @@ GOOD_PACKAGE=${GOOD_PACKAGE:-rhdh/backstage-community-plugin-todo-backend}
 GOOD_PLUGIN=${GOOD_PLUGIN:-@backstage-community/plugin-todo-backend-dynamic}
 INJECT_FAILURE=${INJECT_FAILURE:-none}
 FACE_FILE=/opt/app-root/src/dynamic-plugins.veecode.yaml
+FACTORY_FILE=/opt/app-root/src/factory-plugins.yaml
 VALUES=$HERE/values/sequence.yaml
 FIXTURE_ARTIFACT=$(yq '.spec.dynamicArtifact' "$HERE/fixtures/broken-package.yaml")
 CATALOG_ERRORS='Policy check failed for package:|while validating the entity package:|entity="package:'
@@ -66,6 +67,12 @@ check_loaded_plugins() {
   local tag=$1 step=$2 pod face code=0 detail
   pod=$(portal_pod)
   face="kubectl -n $NS exec $pod -c backstage-backend -- cat $FACE_FILE"
+  # A portal from chart 1.1.0 has no face file; its factory list is printed as `- package:` entries,
+  # the form this devportal-local check reads. Follow-up: read factory-plugins.yaml in that check, then
+  # drop this conversion.
+  if "${K[@]}" exec "$pod" -c backstage-backend -- test -f "$FACTORY_FILE"; then
+    face="kubectl -n $NS exec $pod -c backstage-backend -- cat $FACTORY_FILE | yq -r '.factoryPlugins[] | \"- package: oci://\" + .repository + \"!\" + .path'"
+  fi
   if [ "$INJECT_FAILURE" = missing-plugin ]; then
     face="$face; printf '\n  - package: ./dynamic-plugins/dist/injected-missing-plugin\n'"
   fi
@@ -75,10 +82,39 @@ check_loaded_plugins() {
   assert "$step" "every enabled plugin of the product face is loaded" "" "${detail:-no output}" test "$code" -eq 0
 }
 
+# The factory list names the plugins the catalog index must enable. Both lists are kept by hand,
+# so this check fails when they disagree.
+check_factory_list() {
+  local tag=$1 step=$2 pod index dpdy names_pod names_index only_pod only_index
+  pod=$(portal_pod)
+  if ! "${K[@]}" exec "$pod" -c backstage-backend -- cat "$FACTORY_FILE" > "$OUT/factory-$tag.yaml" 2> /dev/null; then
+    record "$step" "the portal has its factory list" "" 0 "$FACTORY_FILE is missing from the portal"
+    return 0
+  fi
+  if ! index=$(index_packages "$(index_ref)"); then
+    record "$step" "the factory list names the enabled entries of the catalog index" "" 0 "the catalog index could not be read, see steps.log"
+    return 0
+  fi
+  dpdy=${index%/*}/fs/dynamic-plugins.default.yaml
+  if [ ! -s "$dpdy" ]; then
+    record "$step" "the factory list names the enabled entries of the catalog index" "" 0 "the catalog index has no dynamic-plugins.default.yaml"
+    return 0
+  fi
+  yq -r '.factoryPlugins[].repository' "$OUT/factory-$tag.yaml" | sort -u > "$OUT/factory-repositories-$tag.txt"
+  yq -r '.plugins[] | select(.disabled != true) | .package' "$dpdy" |
+    sed -e 's#^oci://##' -e 's#@sha256:.*$##' -e 's#!.*$##' | sort -u > "$OUT/index-repositories-$tag.txt"
+  names_pod=$(wc -l < "$OUT/factory-repositories-$tag.txt")
+  names_index=$(wc -l < "$OUT/index-repositories-$tag.txt")
+  only_pod=$(comm -23 "$OUT/factory-repositories-$tag.txt" "$OUT/index-repositories-$tag.txt" | wc -l)
+  only_index=$(comm -13 "$OUT/factory-repositories-$tag.txt" "$OUT/index-repositories-$tag.txt" | wc -l)
+  assert "$step" "the factory list names the enabled entries of the catalog index" "" \
+    "$names_pod in the portal, $names_index enabled in the index; $only_pod only in the portal, $only_index only in the index" \
+    test "$((only_pod + only_index))" -eq 0
+}
+
 check_catalog() {
   local tag=$1 step=$2 ref index missing extra errors
-  ref=$("${K[@]}" get deploy "$DEPLOY" -o json |
-    jq -r '.spec.template.spec.initContainers[] | select(.name == "install-dynamic-plugins") | .env[] | select(.name == "CATALOG_INDEX_IMAGE") | .value')
+  ref=$(index_ref)
   if index=$(index_packages "$ref"); then
     assert "$step" "the catalog index image can be read" "" "$(wc -l < "$index") packages in $ref" true
   else
@@ -96,6 +132,9 @@ check_catalog() {
   assert "$step" "the portal serves every package of the index" catalog-fixes \
     "$(wc -l < "$OUT/served-$tag.txt") served, $(wc -l < "$index") in $ref plus the fixture; $missing not served, $extra unexpected" \
     test "$((missing + extra))" -eq 0
+  served_versions "$OUT/packages-$tag.json" | comm -13 - "${index%/*}/versions.txt" > "$OUT/stale-$tag.txt"
+  assert "$step" "the portal serves the index's version of every package" catalog-fixes \
+    "$(wc -l < "$OUT/stale-$tag.txt") package(s) at another version" test ! -s "$OUT/stale-$tag.txt"
   errors=$(grep -cE "$CATALOG_ERRORS" "$OUT/backend-$tag.log" || true)
   assert "$step" "no package fails catalog validation in the backend log" catalog-fixes "$errors line(s)" test "$errors" -eq 0
 }
@@ -153,6 +192,7 @@ observe() {
   local tag=$1 step=$2 good=$3 phase=$4 found want=0 needs='' mode
   connect
   wait_catalog "$tag"
+  refresh_packages "$tag"
   collect "$tag"
   log_resources "$step"
   [ "$good" = absent ] || want=1
@@ -160,6 +200,7 @@ observe() {
   found=$(jq --arg n "$GOOD_PLUGIN" '[.[] | select(.name == $n)] | length' "$OUT/loaded-$tag.json")
   assert "$step" "$GOOD_PLUGIN is $good" "$needs" "$(jq length "$OUT/loaded-$tag.json") plugins loaded" test "$found" -eq "$want"
   check_loaded_plugins "$tag" "$step"
+  [ "$phase" = previous ] || check_factory_list "$tag" "$step"
   mode=$(storage_mode "$OUT/backend-$tag.log")
   assert "$step" "the marketplace uses its database" "" "$mode" test "$mode" = database
   check_catalog "$tag" "$step"

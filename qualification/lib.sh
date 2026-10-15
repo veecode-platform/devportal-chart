@@ -356,9 +356,38 @@ index_packages() {
     yq -N 'select(.kind == "Package") | (.metadata.namespace // "default") + "/" + .metadata.name' \
       "$dir"/fs/catalog-entities/extensions/packages/*.yaml | sort -u > "$dir/packages.tmp" || return 1
     [ -s "$dir/packages.tmp" ] || { log "$1 lists no package"; return 1; }
+    yq -N 'select(.kind == "Package") | (.metadata.namespace // "default") + "/" + .metadata.name + " " + (.spec.version // "")' \
+      "$dir"/fs/catalog-entities/extensions/packages/*.yaml | sort -u > "$dir/versions.txt" || return 1
     mv "$dir/packages.tmp" "$dir/packages.txt"
   fi
   echo "$dir/packages.txt"
+}
+
+index_ref() {
+  "${K[@]}" get deploy "$DEPLOY" -o json |
+    jq -r '.spec.template.spec.initContainers[] | select(.name == "install-dynamic-plugins") | .env[] | select(.name == "CATALOG_INDEX_IMAGE") | .value'
+}
+
+served_versions() {
+  jq -r '.items[] | select(.kind == "Package") | (.metadata.namespace // "default") + "/" + .metadata.name + " " + (.spec.version // "")' "$1" | sort -u
+}
+
+# A restart or an upgrade does not run the extensions package provider: Backstage keeps its next run
+# in the database, up to 30 minutes after the last one. Trigger it, then wait until the catalog serves
+# the package versions of the index this pod extracted.
+refresh_packages() {
+  local index code missing
+  index=$(index_packages "$(index_ref)") || return 0
+  code=$(curl -s -o /dev/null -w '%{http_code}' -X POST -H "Authorization: Bearer $TOKEN" \
+    "$URL/api/catalog/.backstage/scheduler/v1/tasks/extensions-package-provider/trigger")
+  log "triggered extensions-package-provider: HTTP $code ($1)"
+  for _ in $(seq 1 30); do
+    api packages > "$OUT/packages-$1.json"
+    missing=$(served_versions "$OUT/packages-$1.json" | comm -13 - "${index%/*}/versions.txt")
+    [ -n "$missing" ] || return 0
+    sleep 10
+  done
+  log "the catalog did not serve the index's package versions in five minutes ($1)"
 }
 
 # Prints the reference and resolves, missing, or error with the registry's message. Missing is

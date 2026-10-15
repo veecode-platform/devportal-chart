@@ -1,7 +1,7 @@
 
 # VeeCode DevPortal Helm Chart
 
-![Version: 1.0.4](https://img.shields.io/badge/Version-1.0.4-informational?style=flat-square)
+![Version: 1.1.0](https://img.shields.io/badge/Version-1.1.0-informational?style=flat-square)
 ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
 
 A Helm chart for deploying VeeCode DevPortal, a VeeCode distribution of Backstage.
@@ -26,7 +26,7 @@ Helm repository.
 
 ```console
 helm repo add veecode https://veecode-platform.github.io/next-charts
-helm install devportal veecode/devportal --version 1.0.4 -n devportal --create-namespace -f values.yaml
+helm install devportal veecode/devportal --version 1.1.0 -n devportal --create-namespace -f values.yaml
 ```
 
 The [DevPortal 3.x install guide](https://docs-next.platform.vee.codes/devportal/installation-guide/v3-preview/intro/)
@@ -36,7 +36,7 @@ explains the runtime Secret and the `values.yaml` the install needs.
 
 This chart bootstraps a [Backstage](https://backstage.io/docs/deployment/docker) deployment on a [Kubernetes](https://kubernetes.io) cluster using the [Helm](https://helm.sh) package manager.
 
-See [docs/product-face-overrides.md](../../docs/product-face-overrides.md) for how the VeeCode product face (`global.dynamic.includes[0]`) is baked into the image and how to customize or disable individual face plugins without dropping the rest.
+See [docs/product-face-overrides.md](../../docs/product-face-overrides.md) for how the VeeCode product face is enabled by the plugin catalog index (`global.catalogIndex.image`) and how to customize or disable individual face plugins without dropping the rest.
 
 ## Prerequisites
 
@@ -135,11 +135,10 @@ Kubernetes: `>= 1.27.0-0`
 | global.auth.backend.enabled | Enable backend service to service authentication, unless configured otherwise it generates a secret value | bool | `false` |
 | global.auth.backend.existingSecret | Instead of generating a secret value, refer to existing secret | string | `""` |
 | global.auth.backend.value | Instead of generating a secret value, use the following value | string | `""` |
-| global.catalogIndex | Catalog index configuration for automatic plugin discovery. The `install-dynamic-plugins.py` script pulls this image if the `CATALOG_INDEX_IMAGE` environment variable is set. The `dynamic-plugins.default.yaml` file will be extracted and written to `dynamic-plugins-root` volume mount. | object | `{"extraImages":[],"image":{"registry":"quay.io","repository":"veecode/plugin-catalog-index@sha256","tag":"927f6c7c3fb838ac6f654a7ddc76c2fa9e57fdc077aaef30f678f076e96810ee"}}` |
+| global.catalogIndex | Catalog index configuration for automatic plugin discovery. The `install-dynamic-plugins.py` script pulls this image if the `CATALOG_INDEX_IMAGE` environment variable is set. The `dynamic-plugins.default.yaml` file will be extracted and written to `dynamic-plugins-root` volume mount. | object | `{"extraImages":[],"image":{"registry":"quay.io","repository":"veecode/plugin-catalog-index@sha256","tag":"26bd062a8fad8c204b1a175e775a4549d599a2a57acd849f083d6591ed2a917d"}}` |
 | global.catalogIndex.extraImages | Extra catalog index images for additional plugin discovery in the Extensions UI. Each item must include `registry`, `repository`, and `tag` fields; `name` is optional. Only catalog entities are extracted from extra images (no `dynamic-plugins.default.yaml` handling). | list | `[]` |
 | global.clusterRouterBase | Shorthand for users who do not want to specify a custom HOSTNAME. Used ONLY with the DEFAULT upstream.backstage.appConfig value and with OCP Route enabled. | string | `"apps.example.com"` |
-| global.dynamic.includes[0] |  | string | `"dynamic-plugins.default.yaml"` |
-| global.dynamic.includes[1] |  | string | `"/opt/app-root/src/dynamic-plugins.veecode.yaml"` |
+| global.dynamic.includes | reuse-values from 1.0.x) is skipped with a warning; the schema does not reject it. | list | `["dynamic-plugins.default.yaml"]` |
 | global.dynamic.plugins |  | list | `[]` |
 | global.host | Custom hostname shorthand, overrides `global.clusterRouterBase`, `upstream.ingress.host`, `route.host`, and url values in `upstream.backstage.appConfig`. | string | `""` |
 | global.lightspeed | Built-in Lightspeed feature configuration. | object | Use Lightspeed compatible settings / configurations. |

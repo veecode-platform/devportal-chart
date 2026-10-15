@@ -34,10 +34,16 @@ ct lint --config ct-lint.yaml --target-branch main
   must serve that digest, and a `bs_<version>_<timestamp>` tag must point at it:
   nothing re-points that tag, so the registry keeps the digest after the moving
   tag moves on. `hack/catalog-index-pin.py check` enforces both, and the values
-  schema rejects a tag that is not a digest on a `@sha256` repository.
-- `global.dynamic.includes` keeps `dynamic-plugins.default.yaml` and
-  `/opt/app-root/src/dynamic-plugins.veecode.yaml`. The values schema rejects a
-  list without them, including in the CI values.
+  schema rejects a tag that is not a digest on a `@sha256` repository, and a
+  digest tag on any other repository.
+- `global.dynamic.includes` keeps `dynamic-plugins.default.yaml`, the pointer the
+  installer swaps for the catalog index, which enables the factory plugins. The
+  values schema rejects a list without it, including in the CI values. The schema
+  accepts a leftover image-baked `dynamic-plugins.veecode.yaml` entry, so an upgrade
+  that reuses 1.0.x values (`helm upgrade --reuse-values`, ct's upgrade test) still
+  validates: image 3.1 has no such file and the installer skips it with a warning.
+  With an image that still has the file, the installer fails when that file and the
+  index name the same plugin.
 - Every chart change bumps `version`, and a merged version is released right
   away with its `chart-v<version>` tag.
 
@@ -45,7 +51,7 @@ ct lint --config ct-lint.yaml --target-branch main
 
 Every chart release re-pins the catalog index first:
 `python3 hack/catalog-index-pin.py pin` rewrites `global.catalogIndex.image` to
-the current digest of `bs_1.52.0`, and the release pull request carries the
+the current digest of `bs_1.54.9`, and the release pull request carries the
 result.
 
 A `chart-v<version>` tag runs `publish-chart-release.yml`, which creates the

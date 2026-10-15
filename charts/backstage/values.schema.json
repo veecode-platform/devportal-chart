@@ -70,6 +70,30 @@
                         },
                         "image": {
                             "additionalProperties": false,
+                            "allOf": [
+                                {
+                                    "if": {
+                                        "properties": {
+                                            "tag": {
+                                                "pattern": "^[0-9a-f]{64}$"
+                                            }
+                                        },
+                                        "required": [
+                                            "tag"
+                                        ]
+                                    },
+                                    "then": {
+                                        "properties": {
+                                            "repository": {
+                                                "pattern": "@sha256$"
+                                            }
+                                        },
+                                        "required": [
+                                            "repository"
+                                        ]
+                                    }
+                                }
+                            ],
                             "if": {
                                 "properties": {
                                     "repository": {
@@ -92,7 +116,7 @@
                                     "type": "string"
                                 },
                                 "tag": {
-                                    "default": "927f6c7c3fb838ac6f654a7ddc76c2fa9e57fdc077aaef30f678f076e96810ee",
+                                    "default": "26bd062a8fad8c204b1a175e775a4549d599a2a57acd849f083d6591ed2a917d",
                                     "title": "Catalog index image tag",
                                     "type": "string"
                                 }
@@ -123,23 +147,13 @@
                     "additionalProperties": false,
                     "properties": {
                         "includes": {
-                            "allOf": [
-                                {
-                                    "contains": {
-                                        "const": "/opt/app-root/src/dynamic-plugins.veecode.yaml"
-                                    }
-                                },
-                                {
-                                    "contains": {
-                                        "const": "dynamic-plugins.default.yaml"
-                                    }
-                                }
-                            ],
+                            "contains": {
+                                "const": "dynamic-plugins.default.yaml"
+                            },
                             "default": [
-                                "dynamic-plugins.default.yaml",
-                                "/opt/app-root/src/dynamic-plugins.veecode.yaml"
+                                "dynamic-plugins.default.yaml"
                             ],
-                            "description": "MUST contain both /opt/app-root/src/dynamic-plugins.veecode.yaml (the image-baked VeeCode product face: Home, header, TechDocs, Notifications, Tech Radar, Marketplace, theme) and dynamic-plugins.default.yaml (the relative pointer the installer's CATALOG_INDEX_IMAGE handling swaps for the catalog-index DPDY). Dropping either pointer silently boots a faceless portal or disables catalog-index plugin discovery; this schema constraint fails the Helm render/install instead. To customize the face, add an entry to global.dynamic.plugins with the same package ref and disabled: true \u2014 do not remove either pointer.",
+                            "description": "MUST contain dynamic-plugins.default.yaml (the relative pointer the installer's CATALOG_INDEX_IMAGE handling swaps for the catalog-index DPDY, which enables the VeeCode factory plugins). Dropping it silently disables catalog-index plugin discovery; this schema constraint fails the Helm render/install instead. Image 3.1 and later no longer carry /opt/app-root/src/dynamic-plugins.veecode.yaml; the installer skips a listed file that does not exist, with a warning, so an includes list kept from chart 1.0.x (for example by helm upgrade --reuse-values) still installs. Remove that entry anyway: with an image that still has the file, the installer fails when it meets the index entries for the same plugins. To disable or reconfigure a factory plugin, use the index ref with  in global.dynamic.plugins, as described in docs/product-face-overrides.md.",
                             "items": {
                                 "type": "string"
                             },
@@ -4934,7 +4948,7 @@
                             "additionalProperties": false,
                             "properties": {
                                 "digest": {
-                                    "default": "sha256:e5c84f744994b30b329e23ff8480857bd4b0be46d63e027b5e87d0428c1df7f5",
+                                    "default": "sha256:fe33373b7e5dc536f04d1878519bb53862a769b46869f78f829b198a30e5246b",
                                     "description": "digest takes precedence over image tag",
                                     "title": "Backstage image digest",
                                     "type": "string"
@@ -4979,7 +4993,7 @@
                                     "type": "string"
                                 },
                                 "tag": {
-                                    "default": "3.0.3",
+                                    "default": "3.1.0",
                                     "description": "Immutable tags are recommended.",
                                     "title": "Backstage image tag",
                                     "type": "string"
@@ -5015,10 +5029,6 @@
                                         {
                                             "name": "DEVPORTAL_DB_PATH",
                                             "value": "/devportal-data"
-                                        },
-                                        {
-                                            "name": "DEVPORTAL_FACE_FILE",
-                                            "value": "/opt/app-root/src/dynamic-plugins.veecode.yaml"
                                         },
                                         {
                                             "name": "DEVPORTAL_OPERATOR_CONFIG",

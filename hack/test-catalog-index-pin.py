@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Tests hack/catalog-index-pin.py against a local registry that answers like quay.io, and
-the values schema guard that stops a tag from riding on a digest repository.
+the two values schema guards on global.catalogIndex.image: the forward guard rejects a tag
+that is not a digest on a digest repository, and the reverse guard rejects a digest tag on
+any other repository. The documented mirror form must still render.
 
 Run it from the repository root with the chart dependencies built (helm dependency build
 charts/backstage): python hack/test-catalog-index-pin.py
@@ -23,7 +25,7 @@ SCRIPT = ROOT / "hack/catalog-index-pin.py"
 CHART = ROOT / "charts/backstage"
 REPOSITORY = "veecode/plugin-catalog-index"
 CURRENT, OLDER = "a" * 64, "b" * 64
-ANCHOR = "bs_1.52.0_20261009T013836"
+ANCHOR = "bs_1.54.9_20261015T134717"
 
 
 class Registry:
@@ -106,15 +108,15 @@ class CatalogIndexPinTest(unittest.TestCase):
 
     def test_pin_rewrites_only_repository_and_tag(self):
         result = self.run_script(
-            {"bs_1.52.0": CURRENT, "bs_1.52.0-m22n1": OLDER, ANCHOR: CURRENT}, "pin",
-            content=values(REPOSITORY, "bs_1.52.0"))
+            {"bs_1.54.9": CURRENT, "bs_1.54.9-m22n1": OLDER, ANCHOR: CURRENT}, "pin",
+            content=values(REPOSITORY, "bs_1.54.9"))
         self.assertEqual(result.returncode, 0, result.stdout)
         self.assertEqual(self.values.read_text(), values(f"{REPOSITORY}@sha256", CURRENT))
         self.assertIn(f"kept by {ANCHOR}", result.stdout)
 
     def test_pin_twice_changes_nothing(self):
-        tags = {"bs_1.52.0": CURRENT, ANCHOR: CURRENT}
-        self.run_script(tags, "pin", content=values(REPOSITORY, "bs_1.52.0"))
+        tags = {"bs_1.54.9": CURRENT, ANCHOR: CURRENT}
+        self.run_script(tags, "pin", content=values(REPOSITORY, "bs_1.54.9"))
         pinned = self.values.read_text()
         result = self.run_script(tags, "pin")
         self.assertEqual(result.returncode, 0, result.stdout)
@@ -122,15 +124,15 @@ class CatalogIndexPinTest(unittest.TestCase):
         self.assertIn("already pins", result.stdout)
 
     def test_pin_refuses_a_digest_that_only_the_moving_tag_holds(self):
-        before = values(REPOSITORY, "bs_1.52.0")
+        before = values(REPOSITORY, "bs_1.54.9")
         result = self.run_script(
-            {"bs_1.52.0": CURRENT, "bs_1.52.0-m22n1": CURRENT}, "pin", content=before)
+            {"bs_1.54.9": CURRENT, "bs_1.54.9-m22n1": CURRENT}, "pin", content=before)
         self.assertEqual(result.returncode, 1)
         self.assertIn("no bs_<version>_<timestamp> tag points at it", result.stdout)
         self.assertEqual(self.values.read_text(), before)
 
     def test_pin_finds_a_timestamped_tag_of_a_prerelease_line_on_a_later_page(self):
-        tags = {"bs_1.52.0": CURRENT, ANCHOR: CURRENT, "latest": OLDER, "bs_1.54.0-next.0": OLDER,
+        tags = {"bs_1.54.9": CURRENT, ANCHOR: CURRENT, "latest": OLDER, "bs_1.54.0-next.0": OLDER,
                 "bs_1.54.0-next.0_20260820T172518": OLDER}
         result = self.run_script(tags, "pin", "bs_1.54.0-next.0", content=values(REPOSITORY, "bs_1.54.0-next.0"))
         self.assertEqual(result.returncode, 0, result.stdout)
@@ -140,35 +142,35 @@ class CatalogIndexPinTest(unittest.TestCase):
         shipped = (CHART / "values.yaml").read_text()
         digest = yaml.safe_load(shipped)["global"]["catalogIndex"]["image"]["tag"]
         result = self.run_script(
-            {"bs_1.52.0": digest, ANCHOR: digest}, "pin", content=shipped)
+            {"bs_1.54.9": digest, ANCHOR: digest}, "pin", content=shipped)
         self.assertEqual(result.returncode, 0, result.stdout)
         self.assertEqual(self.values.read_text(), shipped)
 
     def test_check_passes_for_a_served_digest_that_a_timestamped_tag_holds(self):
         result = self.run_script(
-            {"bs_1.52.0": CURRENT, ANCHOR: CURRENT}, "check",
+            {"bs_1.54.9": CURRENT, ANCHOR: CURRENT}, "check",
             content=values(f"{REPOSITORY}@sha256", CURRENT))
         self.assertEqual(result.returncode, 0, result.stdout)
         self.assertIn(f"kept by {ANCHOR}", result.stdout)
 
     def test_check_fails_when_the_index_is_not_pinned_by_digest(self):
-        for repository, tag in [(REPOSITORY, "bs_1.52.0"), (f"{REPOSITORY}@sha256", ANCHOR)]:
+        for repository, tag in [(REPOSITORY, "bs_1.54.9"), (f"{REPOSITORY}@sha256", ANCHOR)]:
             with self.subTest(repository=repository, tag=tag):
                 result = self.run_script(
-                    {"bs_1.52.0": CURRENT, ANCHOR: CURRENT}, "check", content=values(repository, tag))
+                    {"bs_1.54.9": CURRENT, ANCHOR: CURRENT}, "check", content=values(repository, tag))
                 self.assertEqual(result.returncode, 1)
                 self.assertIn("is not pinned by digest", result.stdout)
 
     def test_check_fails_when_the_registry_does_not_serve_the_digest(self):
         result = self.run_script(
-            {"bs_1.52.0": CURRENT, ANCHOR: CURRENT}, "check", served=set(),
+            {"bs_1.54.9": CURRENT, ANCHOR: CURRENT}, "check", served=set(),
             content=values(f"{REPOSITORY}@sha256", CURRENT))
         self.assertEqual(result.returncode, 1)
         self.assertIn(f"quay.io does not serve {REPOSITORY}@sha256:{CURRENT}", result.stdout)
 
     def test_check_fails_when_no_timestamped_tag_points_at_the_digest(self):
         result = self.run_script(
-            {"bs_1.52.0": CURRENT, "bs_1.52.0-m22n1": CURRENT, ANCHOR: OLDER}, "check",
+            {"bs_1.54.9": CURRENT, "bs_1.54.9-m22n1": CURRENT, ANCHOR: OLDER}, "check",
             content=values(f"{REPOSITORY}@sha256", CURRENT))
         self.assertEqual(result.returncode, 1)
         self.assertIn(f"no bs_<version>_<timestamp> tag points at sha256:{CURRENT}", result.stdout)
@@ -189,6 +191,25 @@ class SchemaGuardTest(unittest.TestCase):
         result = self.render(repository=REPOSITORY, tag=ANCHOR)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn(f"value: quay.io/{REPOSITORY}:{ANCHOR}", result.stdout)
+
+    def test_a_default_digest_tag_on_a_repository_without_a_digest_is_rejected(self):
+        result = self.render(repository=REPOSITORY)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("@sha256$", result.stderr)
+
+    def test_the_mirror_form_renders_the_default_digest_on_a_registry_override(self):
+        shipped = (CHART / "values.yaml").read_text()
+        digest = yaml.safe_load(shipped)["global"]["catalogIndex"]["image"]["tag"]
+        result = self.render(registry="mirror.example.test")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn(f"value: mirror.example.test/{REPOSITORY}@sha256:{digest}", result.stdout)
+
+    def test_the_mirror_form_renders_the_default_digest_on_a_digest_repository(self):
+        shipped = (CHART / "values.yaml").read_text()
+        digest = yaml.safe_load(shipped)["global"]["catalogIndex"]["image"]["tag"]
+        result = self.render(repository="mirror/plugin-catalog-index@sha256")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn(f"value: quay.io/mirror/plugin-catalog-index@sha256:{digest}", result.stdout)
 
 
 if __name__ == "__main__":
