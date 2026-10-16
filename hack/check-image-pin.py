@@ -57,7 +57,13 @@ request = urllib.request.Request(
     f"https://registry-1.docker.io/v2/{repo}/manifests/{tag}",
     method="HEAD",
     headers={"Authorization": f"Bearer {token}", "Accept": MANIFEST_TYPES})
-published = fetch(request).headers["Docker-Content-Digest"]
+try:
+    published = fetch(request).headers["Docker-Content-Digest"]
+except urllib.error.HTTPError as e:
+    if e.code == 404:
+        sys.exit(f"::error::{repo}:{tag} is not published on docker.io; "
+                 "publish the image or fix the tag in values.yaml")
+    sys.exit(f"::error::docker.io answered HTTP {e.code} for {repo}:{tag}")
 
 errors = []
 if app_version != tag:
