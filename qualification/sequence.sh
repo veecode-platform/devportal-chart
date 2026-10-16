@@ -64,19 +64,15 @@ change_package() {
 }
 
 check_loaded_plugins() {
-  local tag=$1 step=$2 pod face code=0 detail
+  local tag=$1 step=$2 pod factory face code=0 detail
   pod=$(portal_pod)
+  factory="kubectl -n $NS exec $pod -c backstage-backend -- cat $FACTORY_FILE"
   face="kubectl -n $NS exec $pod -c backstage-backend -- cat $FACE_FILE"
-  # A portal from chart 1.1.0 has no face file; its factory list is printed as `- package:` entries,
-  # the form this devportal-local check reads. Follow-up: read factory-plugins.yaml in that check, then
-  # drop this conversion.
-  if "${K[@]}" exec "$pod" -c backstage-backend -- test -f "$FACTORY_FILE"; then
-    face="kubectl -n $NS exec $pod -c backstage-backend -- cat $FACTORY_FILE | yq -r '.factoryPlugins[] | \"- package: oci://\" + .repository + \"!\" + .path'"
-  fi
   if [ "$INJECT_FAILURE" = missing-plugin ]; then
-    face="$face; printf '\n  - package: ./dynamic-plugins/dist/injected-missing-plugin\n'"
+    factory="$factory && printf '\n  - repository: quay.io/veecode/injected-missing-plugin\n    path: injected-missing-plugin\n'"
+    face="$face && printf '\n  - package: ./dynamic-plugins/dist/injected-missing-plugin\n'"
   fi
-  FACE_CMD=$face LOGS_CMD="kubectl -n $NS logs $pod -c install-dynamic-plugins" DEVPORTAL_URL=$URL \
+  FACTORY_CMD=$factory FACE_CMD=$face LOGS_CMD="kubectl -n $NS logs $pod -c install-dynamic-plugins" DEVPORTAL_URL=$URL \
     sh "$LOADED_PLUGINS_CHECK" > "$OUT/loaded-plugins-check-$tag.txt" 2>&1 || code=$?
   detail=$({ grep -E 'found in API|FAIL' "$OUT/loaded-plugins-check-$tag.txt" || true; } | sed 's/^loaded plugins check: //' | paste -sd ';' -)
   assert "$step" "every enabled plugin of the product face is loaded" "" "${detail:-no output}" test "$code" -eq 0
