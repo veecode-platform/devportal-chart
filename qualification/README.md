@@ -110,9 +110,9 @@ The sequence has seven steps. After each of the first six it checks that:
 - every enabled plugin of the product face is loaded, and the installer logs hold no
   `Cannot find module`, no `already registered`, and no warning about a skipped entry. This is
   `scripts/check-loaded-plugins.sh` of devportal-local, which the workflow fetches at a pinned
-  commit and which reads the face and the logs of the portal pod through `kubectl`. A chart 1.1.0
-  portal has no face file: the sequence prints its factory list as `- package:` entries, the form
-  that check reads, until that check reads `/opt/app-root/src/factory-plugins.yaml` itself;
+  commit and which reads the factory list and the logs of the portal pod through `kubectl`. A chart
+  1.1.0 portal has no face file, so the check reads `/opt/app-root/src/factory-plugins.yaml`; an
+  older portal without that file falls back to the face;
 - on a chart 1.1.0 portal, the repositories of `/opt/app-root/src/factory-plugins.yaml` are the
   repositories of the enabled entries of the pinned catalog index (`check_factory_list`). Both
   lists are kept by hand, so this is the check that fails when they disagree;
@@ -272,7 +272,7 @@ A dispatch takes `inject_failure`, which breaks one job on purpose:
 
 | Value | What it breaks | What goes red, on a chart of 1.0.4 or later |
 |---|---|---|
-| `missing-plugin` | The sequence expects two plugins that the portal does not have: the good plugin gets another name, and the product face that the loaded-plugins check reads gets one more enabled entry. | Sequence on KinD, and Qualification. |
+| `missing-plugin` | The sequence expects two plugins that the portal does not have: the good plugin gets another name, and the factory list that the loaded-plugins check reads gets one more entry (the face, on an older portal). | Sequence on KinD, and Qualification. |
 | `failed-sign-in` | The specs sign in to Keycloak with a password that the realm does not hold. | Browser on KinD, and Qualification. |
 
 Dispatch it with a self-test of a published version, for example:
