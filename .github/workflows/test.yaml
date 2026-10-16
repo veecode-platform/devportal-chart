@@ -79,7 +79,7 @@ jobs:
     needs: discover-charts
     if: needs.discover-charts.outputs.charts != '[]'
     name: Test (${{ matrix.chart }}${{ matrix.values != '' && format(', {0}', matrix.values) || '' }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 120
     strategy:
       fail-fast: false

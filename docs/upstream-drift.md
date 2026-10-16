@@ -90,6 +90,7 @@ is not listed here is eligible to disappear during the next upstream resync.
 | docs/product-face-overrides.md | States that the guide applies from chart 1.1.0, documents the index override forms and the upgrade from the chart 1.0.x full-ref form, and lists the factory plugin names with their state in the index. | VeeCode product guide; the digests live in the pinned index, so the guide has none to refresh. |
 | docs/upstream-drift.md | Records this fork's drift and resync discipline. | Must be updated whenever the table changes. |
 | ct-install.yaml | Drops `--debug` from `helm-extra-args`. With it, helm prints every rendered manifest, including the base64 branding logo, and ct fails with `signal: broken pipe` after a successful install. | The action still adds `--debug` when the job runs with runner debug on. |
+| `runs-on: ubuntu-24.04` in the `scope`, `sequence` and `browser` jobs of `.github/workflows/qualification.yaml` and the `test-chart` job of `.github/workflows/test.yaml` | GitHub moves `ubuntu-latest` to Ubuntu 26.04 from 2026-10-19 (actions/runner-images#14748). These jobs use the runner's own Docker (KinD), Skopeo, jq and yq, whose versions change there. They stay on 24.04 until each is proven on 26.04. | Keep the pin through an upstream resync that touches these jobs, until it is removed here. |
 
 The remaining inherited workflows are intentionally not listed as drift
 because they are unchanged. The report for the milestone audits all of them:

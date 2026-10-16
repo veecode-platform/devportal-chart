@@ -43,7 +43,7 @@ permissions:
 jobs:
   scope:
     name: Decide what the run qualifies
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       # Reads earlier Qualification runs and their manifests (prior-qualification.sh).
@@ -142,7 +142,7 @@ jobs:
     name: Sequence on KinD
     needs: scope
     if: needs.scope.outputs.run == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
       - name: Checkout
@@ -230,7 +230,7 @@ jobs:
     name: Browser on KinD
     needs: scope
     if: needs.scope.outputs.run == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
       - name: Checkout
