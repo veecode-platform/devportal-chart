@@ -116,7 +116,7 @@
                                     "type": "string"
                                 },
                                 "tag": {
-                                    "default": "26bd062a8fad8c204b1a175e775a4549d599a2a57acd849f083d6591ed2a917d",
+                                    "default": "b6e517e20575ec05618efb02ed86f8f4817403bf4763492a757516a0286008e9",
                                     "title": "Catalog index image tag",
                                     "type": "string"
                                 }
