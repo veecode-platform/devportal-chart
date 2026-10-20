@@ -43,7 +43,7 @@ sources:
 # to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
 # VeeCode owns this chart version independently from the upstream chart version recorded above.
-version: 1.1.0
+version: 1.1.1
 # 0.1.9: the marketplace pre-step sees the operator's appConfig. The init
 #  container's regenerate-extensions-install.js read only the image-baked
 #  app-configs, so `backend.database.prefix` (declared in the deployment's own
@@ -138,4 +138,8 @@ version: 1.1.0
 #  The product face moves into the plugin catalog index. The index enables the factory plugins, and the image keeps only
 #  their names (/opt/app-root/src/factory-plugins.yaml). global.dynamic.includes is the DPDY include alone, and the face file is
 #  no longer read. Overrides use the index form in docs/product-face-overrides.md.
+# 1.1.1: catalog index only, image stays 3.1.0. The index moves to bs_1.54.9_20261020T201546, which fixes three MCP tools:
+#  scaffolder-mcp-extras 0.4.5-veecode.1 (list-scaffolder-actions and validate-scaffolder send the caller's token),
+#  techdocs-mcp-extras 0.2.7-veecode.2 (build dates read as milliseconds) and announcements-backend 0.28.2-veecode.1
+#  (announcements without on_behalf_of pass the output schema).
 appVersion: 3.1.0
