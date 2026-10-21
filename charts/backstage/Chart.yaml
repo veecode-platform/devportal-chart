@@ -142,7 +142,8 @@ version: 1.1.2
 #  scaffolder-mcp-extras 0.4.5-veecode.1 (list-scaffolder-actions and validate-scaffolder send the caller's token),
 #  techdocs-mcp-extras 0.2.7-veecode.2 (build dates read as milliseconds) and announcements-backend 0.28.2-veecode.1
 #  (announcements without on_behalf_of pass the output schema).
-# 1.1.2: catalog index only, image stays 3.1.0. The index moves to bs_1.54.9_20261021T175344, which differs from
-#  1.1.1's only in veecode-homepage 1.0.4: the home content keeps its spacing when another dynamic plugin sets the
-#  MUI class prefix on the shared copy (Grid spacing replaced by CSS grid with gap).
-appVersion: 3.1.0
+# 1.1.2: image -> 3.1.1 and a new catalog index. 3.1.1 is 3.1.0 with certifi 2026.10.19 in the TechDocs virtualenv,
+#  which fixes GHSA-6q48-6c7w-9gw2 (critical). The index moves to bs_1.54.9_20261021T175344, which differs from 1.1.1's
+#  only in veecode-homepage 1.0.4: the home content keeps its spacing when another dynamic plugin sets the MUI class
+#  prefix on the shared copy (Grid spacing replaced by CSS grid with gap).
+appVersion: 3.1.1
