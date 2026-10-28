@@ -4948,7 +4948,7 @@
                             "additionalProperties": false,
                             "properties": {
                                 "digest": {
-                                    "default": "sha256:726cc70543dd5a122e4ffcbc7fe9734f9b25366e39b775cd4a86e9c68f7c6f26",
+                                    "default": "sha256:869b8f3eb9f543dd87b3dbd474073c1d0cfbd6816121cf8dd03058bf498fa691",
                                     "description": "digest takes precedence over image tag",
                                     "title": "Backstage image digest",
                                     "type": "string"
@@ -4993,7 +4993,7 @@
                                     "type": "string"
                                 },
                                 "tag": {
-                                    "default": "3.1.1",
+                                    "default": "3.1.2",
                                     "description": "Immutable tags are recommended.",
                                     "title": "Backstage image tag",
                                     "type": "string"

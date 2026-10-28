@@ -293,14 +293,14 @@ upstream:
     image:
       registry: docker.io
       repository: veecode/devportal
-      # This is the 3.1.1 release, promoted by digest from the qualified
-      # 3.1.1-rc.1 candidate. Main product line, Backstage 1.54.9. The 18
+      # This is the 3.1.2 release, promoted by digest from the qualified
+      # 3.1.2-rc.1 candidate. Main product line, Backstage 1.54.9. The 18
       # factory plugins come enabled from the plugin catalog index, and the
       # image keeps only their names in /opt/app-root/src/factory-plugins.yaml.
       # The digest WINS over the tag: bump both together. It is the multi-arch
       # manifest list digest (amd64 + arm64), not a single-arch image digest.
-      tag: 3.1.1
-      digest: sha256:726cc70543dd5a122e4ffcbc7fe9734f9b25366e39b775cd4a86e9c68f7c6f26
+      tag: 3.1.2
+      digest: sha256:869b8f3eb9f543dd87b3dbd474073c1d0cfbd6816121cf8dd03058bf498fa691
       pullPolicy: IfNotPresent
     command: []
     # FIXME (tumido): USE POSTGRES_PASSWORD and POSTGRES_USER instead of POSTGRES_ADMIN_PASSWORD
